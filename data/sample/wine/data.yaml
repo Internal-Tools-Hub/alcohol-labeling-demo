@@ -1,0 +1,191 @@
+pass:
+  - id: "wine_pass_001"
+    brand_name: "Vineyard Estate Chardonnay"
+    product_type: "Wine"
+    alcohol_content: 13.5
+    net_contents: "750 ml"
+    description: "Elegant white wine with oak aging"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Napa Valley, California"
+    bottler_name: "Vineyard Estate Winery"
+    
+  - id: "wine_pass_002"
+    brand_name: "Sunset Hills Cabernet"
+    product_type: "Wine"
+    alcohol_content: 14.2
+    net_contents: "750 ml"
+    description: "Full-bodied red wine with berry notes"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Sonoma County, California"
+    bottler_name: "Sunset Hills Winery"
+    
+  - id: "wine_pass_003"
+    brand_name: "Coastal Pinot Noir"
+    product_type: "Wine"
+    alcohol_content: 13.8
+    net_contents: "750 ml"
+    description: "Smooth red wine with earthy undertones"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Willamette Valley, Oregon"
+    bottler_name: "Coastal Winery"
+    
+  - id: "wine_pass_004"
+    brand_name: "Garden Rose"
+    product_type: "Wine"
+    alcohol_content: 12.9
+    net_contents: "750 ml"
+    description: "Light and fruity rose wine"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Finger Lakes, New York"
+    bottler_name: "Garden Winery"
+    
+  - id: "wine_pass_005"
+    brand_name: "Mountain View Merlot"
+    product_type: "Wine"
+    alcohol_content: 14.0
+    net_contents: "750 ml"
+    description: "Rich merlot with plum flavors"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Columbia Valley, Washington"
+    bottler_name: "Mountain View Winery"
+    
+  - id: "wine_pass_006"
+    brand_name: "Valley Riesling"
+    product_type: "Wine"
+    alcohol_content: 11.5
+    net_contents: "750 ml"
+    description: "Crisp white wine with mineral notes"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Mosel Valley, Germany"
+    bottler_name: "Valley Winery"
+    
+  - id: "wine_pass_007"
+    brand_name: "Heritage Syrah"
+    product_type: "Wine"
+    alcohol_content: 14.5
+    net_contents: "750 ml"
+    description: "Bold red wine with spice characteristics"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Barossa Valley, Australia"
+    bottler_name: "Heritage Winery"
+    
+  - id: "wine_pass_008"
+    brand_name: "Spring Sauvignon Blanc"
+    product_type: "Wine"
+    alcohol_content: 12.8
+    net_contents: "750 ml"
+    description: "Fresh white wine with citrus aromas"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Marlborough, New Zealand"
+    bottler_name: "Spring Winery"
+    
+  - id: "wine_pass_009"
+    brand_name: "Estate Reserve"
+    product_type: "Wine"
+    alcohol_content: 15.1
+    net_contents: "750 ml"
+    description: "Premium blend with complex flavors"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Tuscany, Italy"
+    bottler_name: "Estate Reserve Winery"
+    
+  - id: "wine_pass_010"
+    brand_name: "Dessert Port"
+    product_type: "Wine"
+    alcohol_content: 18.0
+    net_contents: "375 ml"
+    description: "Sweet fortified wine for dessert"
+    regulatory_citation: "27 CFR 4.32"
+    winery_location: "Douro Valley, Portugal"
+    bottler_name: "Dessert Port Winery"
+
+fail:
+  - id: "wine_fail_001"
+    brand_name: "Silent Wine"
+    product_type: "Wine"
+    alcohol_content: 13.2
+    net_contents: "750 ml"
+    description: "Missing alcohol content statement"
+    regulatory_citation: "27 CFR 4.32(a)(1) - Alcohol content must be stated"
+    failure_reason: "Missing alcohol content statement"
+    
+  - id: "wine_fail_002"
+    brand_name: "Unknown Vintage"
+    product_type: "Wine"
+    alcohol_content: 14.0
+    net_contents: "750 ml"
+    description: "Missing vintage year declaration"
+    regulatory_citation: "27 CFR 4.32(a)(2) - Vintage year required"
+    failure_reason: "Missing vintage year"
+    
+  - id: "wine_fail_003"
+    brand_name: "Generic Red"
+    product_type: "Wine"
+    alcohol_content: 13.8
+    net_contents: "750 ml"
+    description: "Missing appellation of origin"
+    regulatory_citation: "27 CFR 4.32(a)(3) - Appellation required"
+    failure_reason: "Missing appellation of origin"
+    
+  - id: "wine_fail_004"
+    brand_name: "Mystery Blend"
+    product_type: "Wine"
+    alcohol_content: 14.5
+    net_contents: "750 ml"
+    description: "Missing varietal designation"
+    regulatory_citation: "27 CFR 4.32(a)(4) - Varietal designation required"
+    failure_reason: "Missing varietal designation"
+    
+  - id: "wine_fail_005"
+    brand_name: "Health Wine"
+    product_type: "Wine"
+    alcohol_content: 13.0
+    net_contents: "750 ml"
+    description: "Contains prohibited health claims"
+    regulatory_citation: "27 CFR 4.32(b) - Prohibited statements"
+    failure_reason: "Contains prohibited health claims"
+    
+  - id: "wine_fail_006"
+    brand_name: "Tiny Text Wine"
+    product_type: "Wine"
+    alcohol_content: 12.9
+    net_contents: "750 ml"
+    description: "Text size below minimum requirements"
+    regulatory_citation: "27 CFR 4.32(c) - Minimum type size"
+    failure_reason: "Text size below minimum requirements"
+    
+  - id: "wine_fail_007"
+    brand_name: "Foreign Label"
+    product_type: "Wine"
+    alcohol_content: 13.7
+    net_contents: "750 ml"
+    description: "Label not in English"
+    regulatory_citation: "27 CFR 4.32(d) - English language requirement"
+    failure_reason: "Label not in English"
+    
+  - id: "wine_fail_008"
+    brand_name: "Hidden Alcohol Wine"
+    product_type: "Wine"
+    alcohol_content: 15.2
+    net_contents: "750 ml"
+    description: "Alcohol content not clearly visible"
+    regulatory_citation: "27 CFR 4.32(a)(1) - Alcohol content visibility"
+    failure_reason: "Alcohol content not clearly visible"
+    
+  - id: "wine_fail_009"
+    brand_name: "Wrong Volume"
+    product_type: "Wine"
+    alcohol_content: 13.5
+    net_contents: "750 ml"
+    description: "Net contents declaration inaccurate"
+    regulatory_citation: "27 CFR 4.32(a)(5) - Accurate net contents"
+    failure_reason: "Net contents declaration inaccurate"
+    
+  - id: "wine_fail_010"
+    brand_name: "No Warning Wine"
+    product_type: "Wine"
+    alcohol_content: 14.1
+    net_contents: "750 ml"
+    description: "Missing government warning"
+    regulatory_citation: "27 CFR 4.32(e) - Government warning required"
+    failure_reason: "Missing government warning statement"

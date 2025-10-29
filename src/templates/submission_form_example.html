@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Submission Form</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Alcohol Label Submission Form</h1>
+    
+    <form id="submissionForm">
+        <!-- Company Information (read-only, based on logged-in user) -->
+        <div>
+            <label>Company:</label>
+            <span id="companyName">Loading...</span>
+        </div>
+        
+        <!-- Location Dropdown (filtered by user's company) -->
+        <div>
+            <label for="locationSelect">Production Location:</label>
+            <select id="locationSelect" name="location_id" required>
+                <option value="">Select a location...</option>
+            </select>
+        </div>
+        
+        <!-- Product Information -->
+        <div>
+            <label for="brandName">Brand Name:</label>
+            <input type="text" id="brandName" name="brand_name" required>
+        </div>
+        
+        <div>
+            <label for="productType">Product Type:</label>
+            <select id="productType" name="product_type" required>
+                <option value="">Select product type...</option>
+                <option value="Beer">Beer</option>
+                <option value="Wine">Wine</option>
+                <option value="Liquor">Liquor</option>
+            </select>
+        </div>
+        
+        <div>
+            <label for="alcoholContent">Alcohol Content (% by volume):</label>
+            <input type="number" id="alcoholContent" name="alcohol_content" step="0.1" required>
+        </div>
+        
+        <div>
+            <label for="netContents">Net Contents:</label>
+            <input type="text" id="netContents" name="net_contents" placeholder="e.g., 12 fl oz (355 ml)">
+        </div>
+        
+        <div>
+            <label for="imageUpload">Label Image:</label>
+            <input type="file" id="imageUpload" name="image" accept="image/*" required>
+        </div>
+        
+        <button type="submit">Submit Label for Verification</button>
+    </form>
+
+    <script>
+        // Mock user data - in real app, this would come from authentication
+        const currentUserId = 1; // This would be set by your auth system
+        
+        // Load company and locations on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserCompany();
+        });
+        
+        async function loadUserCompany() {
+            try {
+                // Get user's company
+                const companyResponse = await axios.get(`/api/users/${currentUserId}/company`);
+                const company = companyResponse.data;
+                
+                document.getElementById('companyName').textContent = company.name;
+                
+                // Load locations for this company
+                await loadCompanyLocations(company.id);
+                
+            } catch (error) {
+                console.error('Error loading company:', error);
+                document.getElementById('companyName').textContent = 'Error loading company';
+            }
+        }
+        
+        async function loadCompanyLocations(companyId) {
+            try {
+                const locationsResponse = await axios.get(`/api/companies/${companyId}/locations`);
+                const locations = locationsResponse.data.locations;
+                
+                const locationSelect = document.getElementById('locationSelect');
+                
+                // Clear existing options except the first one
+                locationSelect.innerHTML = '<option value="">Select a location...</option>';
+                
+                // Add location options
+                locations.forEach(location => {
+                    const option = document.createElement('option');
+                    option.value = location.id;
+                    option.textContent = location.full_address;
+                    if (location.is_primary) {
+                        option.textContent += ' (Primary)';
+                        option.selected = true; // Auto-select primary location
+                    }
+                    locationSelect.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('Error loading locations:', error);
+            }
+        }
+        
+        // Handle form submission
+        document.getElementById('submissionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Get company ID (you'd get this from the user's session)
+            const companyId = 1; // This would come from the logged-in user's company
+            
+            const submissionData = {
+                user_id: currentUserId,
+                company_id: companyId,
+                location_id: parseInt(formData.get('location_id')),
+                brand_name: formData.get('brand_name'),
+                product_type: formData.get('product_type'),
+                alcohol_content: parseFloat(formData.get('alcohol_content')),
+                net_contents: formData.get('net_contents'),
+                image_url: 'placeholder_url' // In real app, upload image first
+            };
+            
+            try {
+                const response = await axios.post('/api/submissions', submissionData);
+                alert('Submission created successfully!');
+                this.reset();
+            } catch (error) {
+                console.error('Error creating submission:', error);
+                alert('Error creating submission: ' + error.response.data.error);
+            }
+        });
+    </script>
+</body>
+</html>
+

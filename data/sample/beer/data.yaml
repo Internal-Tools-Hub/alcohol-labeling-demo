@@ -1,0 +1,211 @@
+pass:
+  - id: "beer_pass_001"
+    brand_name: "Golden Valley Brewing"
+    product_type: "Beer"
+    alcohol_content: 5.2
+    net_contents: "12 fl oz (355 ml)"
+    description: "Classic American lager with crisp taste and golden color"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Portland, Oregon"
+    bottler_name: "Golden Valley Brewing Co."
+    
+  - id: "beer_pass_002"
+    brand_name: "Mountain Peak IPA"
+    product_type: "Beer"
+    alcohol_content: 6.8
+    net_contents: "16 fl oz (473 ml)"
+    description: "Hoppy India Pale Ale with citrus notes"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Denver, Colorado"
+    bottler_name: "Mountain Peak Brewing"
+    
+  - id: "beer_pass_003"
+    brand_name: "Riverside Pilsner"
+    product_type: "Beer"
+    alcohol_content: 4.9
+    net_contents: "12 fl oz (355 ml)"
+    description: "Traditional Czech-style pilsner"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Milwaukee, Wisconsin"
+    bottler_name: "Riverside Brewing Co."
+    
+  - id: "beer_pass_004"
+    brand_name: "Sunset Wheat"
+    product_type: "Beer"
+    alcohol_content: 5.5
+    net_contents: "12 fl oz (355 ml)"
+    description: "Smooth wheat beer with hints of orange"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "San Diego, California"
+    bottler_name: "Sunset Brewing Company"
+    
+  - id: "beer_pass_005"
+    brand_name: "Thunder Stout"
+    product_type: "Beer"
+    alcohol_content: 7.1
+    net_contents: "16 fl oz (473 ml)"
+    description: "Rich, dark stout with coffee and chocolate notes"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Seattle, Washington"
+    bottler_name: "Thunder Brewing Co."
+    
+  - id: "beer_pass_006"
+    brand_name: "Crystal Light Lager"
+    product_type: "Beer"
+    alcohol_content: 4.2
+    net_contents: "12 fl oz (355 ml)"
+    description: "Light and refreshing lager with clean finish"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Austin, Texas"
+    bottler_name: "Crystal Brewing Company"
+    
+  - id: "beer_pass_007"
+    brand_name: "Forest Porter"
+    product_type: "Beer"
+    alcohol_content: 6.3
+    net_contents: "16 fl oz (473 ml)"
+    description: "Robust porter with smoky undertones"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Bend, Oregon"
+    bottler_name: "Forest Brewing Co."
+    
+  - id: "beer_pass_008"
+    brand_name: "Coastal Blonde"
+    product_type: "Beer"
+    alcohol_content: 4.8
+    net_contents: "12 fl oz (355 ml)"
+    description: "Easy-drinking blonde ale perfect for summer"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Charleston, South Carolina"
+    bottler_name: "Coastal Brewing Company"
+    
+  - id: "beer_pass_009"
+    brand_name: "Urban Sour"
+    product_type: "Beer"
+    alcohol_content: 5.7
+    net_contents: "12 fl oz (355 ml)"
+    description: "Tart sour ale with berry flavors"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Brooklyn, New York"
+    bottler_name: "Urban Brewing Co."
+    
+  - id: "beer_pass_010"
+    brand_name: "Heritage Bock"
+    product_type: "Beer"
+    alcohol_content: 6.9
+    net_contents: "16 fl oz (473 ml)"
+    description: "Traditional German bock with malty sweetness"
+    regulatory_citation: "27 CFR 7.22"
+    brewery_location: "Cincinnati, Ohio"
+    bottler_name: "Heritage Brewing Co."
+
+fail:
+  - id: "beer_fail_001"
+    brand_name: "Quick Brew"
+    product_type: "Beer"
+    alcohol_content: 5.2
+    net_contents: "12 fl oz (355 ml)"
+    description: "Missing alcohol content statement"
+    regulatory_citation: "27 CFR 7.22(a)(1) - Alcohol content must be stated"
+    failure_reason: "Missing alcohol content statement"
+    brewery_location: "Phoenix, Arizona"
+    bottler_name: "Quick Brewing Co."
+    
+  - id: "beer_fail_002"
+    brand_name: "Mystery Lager"
+    product_type: "Beer"
+    alcohol_content: 4.8
+    net_contents: "12 fl oz (355 ml)"
+    description: "Missing net contents declaration"
+    regulatory_citation: "27 CFR 7.22(a)(2) - Net contents must be declared"
+    failure_reason: "Missing net contents declaration"
+    brewery_location: "Nashville, Tennessee"
+    bottler_name: "Mystery Brewing Co."
+    
+  - id: "beer_fail_003"
+    brand_name: "Generic Beer"
+    product_type: "Beer"
+    alcohol_content: 5.5
+    net_contents: "12 fl oz (355 ml)"
+    description: "Missing brand name or generic name"
+    regulatory_citation: "27 CFR 7.22(a)(3) - Brand name required"
+    failure_reason: "Missing brand name"
+    brewery_location: "Detroit, Michigan"
+    bottler_name: "Generic Brewing Co."
+    
+  - id: "beer_fail_004"
+    brand_name: "Old Style Brew"
+    product_type: "Beer"
+    alcohol_content: 6.2
+    net_contents: "12 fl oz (355 ml)"
+    description: "Alcohol content not in correct format"
+    regulatory_citation: "27 CFR 7.22(a)(1) - Alcohol content format requirements"
+    failure_reason: "Alcohol content format incorrect (missing % by volume)"
+    brewery_location: "St. Louis, Missouri"
+    bottler_name: "Old Style Brewing Co."
+    
+  - id: "beer_fail_005"
+    brand_name: "Confusing Ale"
+    product_type: "Beer"
+    alcohol_content: 5.8
+    net_contents: "12 fl oz (355 ml)"
+    description: "Misleading health claims on label"
+    regulatory_citation: "27 CFR 7.22(b) - Prohibited statements"
+    failure_reason: "Contains prohibited health claims"
+    brewery_location: "Las Vegas, Nevada"
+    bottler_name: "Confusing Brewing Co."
+    
+  - id: "beer_fail_006"
+    brand_name: "Tiny Brew"
+    product_type: "Beer"
+    alcohol_content: 4.5
+    net_contents: "12 fl oz (355 ml)"
+    description: "Text too small to read clearly"
+    regulatory_citation: "27 CFR 7.22(c) - Minimum type size requirements"
+    failure_reason: "Text size below minimum requirements"
+    brewery_location: "Minneapolis, Minnesota"
+    bottler_name: "Tiny Brewing Co."
+    
+  - id: "beer_fail_007"
+    brand_name: "Foreign Lager"
+    product_type: "Beer"
+    alcohol_content: 5.1
+    net_contents: "12 fl oz (355 ml)"
+    description: "Missing English language requirement"
+    regulatory_citation: "27 CFR 7.22(d) - English language requirement"
+    failure_reason: "Label not in English"
+    brewery_location: "Montreal, Quebec"
+    bottler_name: "Foreign Brewing Co."
+    
+  - id: "beer_fail_008"
+    brand_name: "Hidden Alcohol"
+    product_type: "Beer"
+    alcohol_content: 7.3
+    net_contents: "12 fl oz (355 ml)"
+    description: "Alcohol content obscured or hidden"
+    regulatory_citation: "27 CFR 7.22(a)(1) - Alcohol content visibility"
+    failure_reason: "Alcohol content not clearly visible"
+    brewery_location: "Kansas City, Missouri"
+    bottler_name: "Hidden Brewing Co."
+    
+  - id: "beer_fail_009"
+    brand_name: "Wrong Size"
+    product_type: "Beer"
+    alcohol_content: 5.4
+    net_contents: "12 fl oz (355 ml)"
+    description: "Net contents declaration incorrect"
+    regulatory_citation: "27 CFR 7.22(a)(2) - Accurate net contents"
+    failure_reason: "Net contents declaration inaccurate"
+    brewery_location: "Atlanta, Georgia"
+    bottler_name: "Wrong Size Brewing Co."
+    
+  - id: "beer_fail_010"
+    brand_name: "Missing Info"
+    product_type: "Beer"
+    alcohol_content: 6.0
+    net_contents: "12 fl oz (355 ml)"
+    description: "Missing required government warning"
+    regulatory_citation: "27 CFR 7.22(e) - Government warning required"
+    failure_reason: "Missing government warning statement"
+    brewery_location: "Miami, Florida"
+    bottler_name: "Missing Info Brewing Co."
