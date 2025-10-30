@@ -21,6 +21,14 @@ A Streamlit-based web application that simulates the TTB (Alcohol and Tobacco Ta
 
 ## Prerequisites
 
+### Option 1: Docker (Recommended)
+- Docker (version 20.10+)
+- Docker Compose (version 2.0+)
+- Google Cloud Platform account with:
+  - Gemini API enabled
+  - Cloud Storage bucket
+
+### Option 2: Manual Installation
 - Python 3.8+
 - PostgreSQL 17+
 - Google Cloud Platform account with:
@@ -28,7 +36,33 @@ A Streamlit-based web application that simulates the TTB (Alcohol and Tobacco Ta
   - Cloud Storage bucket
 - Google Cloud credentials (service account key)
 
-## Installation
+## Quick Start with Docker
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd alcohol-labeling-demo
+   ```
+
+2. **Setup and start the application**
+   ```bash
+   # Initial setup
+   make setup
+   
+   # Edit .env file with your configuration
+   nano .env
+   
+   # Start development environment
+   make dev
+   ```
+
+3. **Access the application**
+   - Application: http://localhost:8501
+   - Database: localhost:5432
+
+For detailed Docker setup instructions, see [Docker Deployment Guide](docs/deployment/DOCKER_README.md).
+
+## Manual Installation
 
 1. **Clone the repository**
    ```bash
@@ -43,7 +77,7 @@ A Streamlit-based web application that simulates the TTB (Alcohol and Tobacco Ta
 
 3. **Set up environment variables**
    ```bash
-   cp .env.example .env
+   cp env.example .env
    ```
    
    Edit `.env` with your configuration:

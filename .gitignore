@@ -53,7 +53,7 @@ venv.bak/
 # GOOGLE CLOUD
 # =============================================================================
 # Service account keys (NEVER commit these!)
-*.json
+credentials/*.json
 !requirements.json
 !package.json
 !tsconfig.json
@@ -118,9 +118,6 @@ images/
 *.key
 
 # Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
 
 # =============================================================================
 # TESTING & COVERAGE

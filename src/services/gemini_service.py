@@ -10,9 +10,8 @@ class GeminiService:
     def __init__(self):
         """Initialize Gemini client"""
         try:
-            # Configure the API key
-            genai.configure(api_key=Config.GEMINI_API_KEY)
-            self.client = genai.Client()
+            # Initialize client with API key (google-genai SDK)
+            self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
             self.model = "gemini-2.5-flash"  # Using the recommended model
         except Exception as e:
             st.error(f"Failed to initialize Gemini client: {e}")

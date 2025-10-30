@@ -1,0 +1,109 @@
+# Production Docker Compose Configuration for Linux VM Deployment
+# Use this file for production deployment: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  app:
+    # Production-specific configuration
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      VOLUME_MOUNT: ""  # Disable source code mounting in production
+    # Remove port exposure (handled by nginx)
+    ports: []
+    # Production restart policy
+    restart: always
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    # Health check with longer intervals for production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    # Production database configuration
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alcohol_label_verification}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    # Remove port exposure for security
+    ports: []
+    # Production restart policy
+    restart: always
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+        reservations:
+          memory: 256M
+          cpus: '0.1'
+    # Production health check
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-alcohol_label_verification}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    # Enable nginx for production
+    profiles: []
+    # Production nginx configuration
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:-localhost}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@example.com}
+    # Production restart policy
+    restart: always
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+        reservations:
+          memory: 64M
+          cpus: '0.05'
+    # Health check for nginx
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Let's Encrypt SSL certificate management
+  certbot:
+    image: certbot/certbot
+    container_name: alcohol-labeling-certbot
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./nginx/webroot:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email ${LETSENCRYPT_EMAIL:-admin@example.com} --agree-tos --no-eff-email -d ${DOMAIN_NAME:-localhost}
+    profiles:
+      - ssl-setup
+    depends_on:
+      - nginx
+
+  # SSL certificate renewal
+  certbot-renew:
+    image: certbot/certbot
+    container_name: alcohol-labeling-certbot-renew
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./nginx/webroot:/var/www/certbot
+    command: renew --webroot --webroot-path=/var/www/certbot
+    profiles:
+      - ssl-renew
+    depends_on:
+      - nginx

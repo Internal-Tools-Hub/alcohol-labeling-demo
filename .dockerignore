@@ -1,0 +1,110 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Docker files
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Environment files
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Test files
+test_*
+*_test.py
+tests/
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Credentials (should be mounted as volumes)
+credentials/
+*.json
+*.key
+*.pem
+
+# Uploads (should be mounted as volumes)
+uploads/
+
+# SSL certificates
+nginx/ssl/
+nginx/webroot/
+
+# Backup files
+backup_*.sql
+*.backup
+
+# Node modules (if any)
+node_modules/
+
+# Makefile
+Makefile
