@@ -112,6 +112,27 @@ class GCSService:
         except Exception as e:
             st.error(f"Failed to get public URL: {e}")
             return gcs_url  # Return original URL as fallback
+
+    def generate_signed_url(self, gcs_url, expiration_seconds=900):
+        """Generate a time-limited signed URL for private objects.
+        Args:
+            gcs_url: GCS URL (gs://bucket/path)
+            expiration_seconds: Link lifetime in seconds (default 15 minutes)
+        Returns:
+            str: Signed HTTPS URL
+        """
+        try:
+            if gcs_url.startswith('gs://'):
+                blob_name = gcs_url[5:].split('/', 1)[1]
+            else:
+                blob_name = gcs_url
+
+            blob = self.bucket.blob(blob_name)
+            url = blob.generate_signed_url(expiration=expiration_seconds, method='GET')
+            return url
+        except Exception as e:
+            st.error(f"Failed to generate signed URL: {e}")
+            return self.get_public_url(gcs_url)
     
     def delete_image(self, gcs_url):
         """
@@ -148,8 +169,24 @@ class GCSService:
     def test_connection(self):
         """Test GCS connection and bucket access"""
         try:
-            # Try to list objects in bucket (limit to 1 for efficiency)
-            list(self.bucket.list_blobs(max_results=1))
+            # Check required permissions without needing list access
+            required_perms = [
+                'storage.objects.create',
+                'storage.objects.get',
+                'storage.objects.delete'
+            ]
+
+            # This call does not require list; it returns which perms the caller has
+            granted = self.bucket.test_iam_permissions(required_perms)
+
+            # Consider connection OK if we at least have create and get
+            has_minimum = 'storage.objects.create' in granted and 'storage.objects.get' in granted
+
+            if not has_minimum:
+                missing = [p for p in required_perms if p not in granted]
+                st.error(f"GCS connection test: missing permissions: {', '.join(missing)} on bucket {self.bucket_name}")
+                return False
+
             return True
         except Exception as e:
             st.error(f"GCS connection test failed: {e}")

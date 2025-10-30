@@ -58,8 +58,8 @@ class Submission(Base):
     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
-    location_id = Column(Integer, ForeignKey('locations.id'), nullable=False)
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=True)
+    location_id = Column(Integer, ForeignKey('locations.id'), nullable=True)
     brand_name = Column(String(255), nullable=False)
     product_type = Column(String(255), nullable=False)
     alcohol_content = Column(Float, nullable=False)

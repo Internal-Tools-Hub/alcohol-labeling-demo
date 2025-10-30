@@ -17,13 +17,14 @@ class GeminiService:
             st.error(f"Failed to initialize Gemini client: {e}")
             raise
     
-    def extract_label_text(self, image_bytes, content_type='image/jpeg'):
+    def extract_label_text(self, image_inputs, content_type='image/jpeg'):
         """
         Extract structured text from alcohol label image using Gemini Vision API
         
         Args:
-            image_bytes: Image data as bytes
-            content_type: MIME type of the image
+            image_inputs: Either a single bytes object, or a list/tuple of
+                          (bytes, content_type) pairs, or a list of bytes
+            content_type: Default MIME type when image_inputs is single bytes or list of bytes
             
         Returns:
             dict: Structured extraction results
@@ -52,16 +53,33 @@ class GeminiService:
             - Provide a confidence score based on text clarity and completeness
             """
             
-            # Create the image part
-            image_part = types.Part.from_bytes(
-                data=image_bytes,
-                mime_type=content_type,
-            )
-            
-            # Generate content with Gemini
+            # Build image parts (support multiple images)
+            image_parts = []
+            if isinstance(image_inputs, (bytes, bytearray)):
+                image_parts.append(
+                    types.Part.from_bytes(data=image_inputs, mime_type=content_type)
+                )
+            elif isinstance(image_inputs, (list, tuple)):
+                for item in image_inputs:
+                    if isinstance(item, (bytes, bytearray)):
+                        image_parts.append(
+                            types.Part.from_bytes(data=item, mime_type=content_type)
+                        )
+                    elif isinstance(item, (list, tuple)) and len(item) == 2:
+                        data_bytes, mime = item
+                        image_parts.append(
+                            types.Part.from_bytes(data=data_bytes, mime_type=mime or content_type)
+                        )
+            else:
+                # Fallback: try treating as single bytes
+                image_parts.append(
+                    types.Part.from_bytes(data=image_inputs, mime_type=content_type)
+                )
+
+            # Generate content with Gemini (prompt + all image parts)
             response = self.client.models.generate_content(
                 model=self.model,
-                contents=[prompt, image_part],
+                contents=[prompt, *image_parts],
                 config=types.GenerateContentConfig(
                     temperature=0.1,  # Low temperature for consistent extraction
                     max_output_tokens=1000

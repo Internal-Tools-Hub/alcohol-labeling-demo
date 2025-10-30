@@ -192,28 +192,51 @@ gcloud services enable storage.googleapis.com
 ### 2. Create Storage Bucket
 
 ```bash
-# Create bucket
-gsutil mb gs://your-bucket-name
+# ----------------------------------------------------------------------------
+# Configure variables (edit these to your values)
+# ----------------------------------------------------------------------------
+export PROJECT_ID="your-project-id"
+export BUCKET_NAME="your-bucket-name"           # e.g., alcohol-labeling-demo
+export SERVICE_ACCOUNT_NAME="alcohol-labeling-app"
+export SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
-# Set permissions (optional - for public access)
-gsutil iam ch allUsers:objectViewer gs://your-bucket-name
+# Create bucket
+gsutil mb gs://$BUCKET_NAME
+
+# SKIP, but FYI. Set permissions (optional - for public access)
+gsutil iam ch allUsers:objectViewer gs://$BUCKET_NAME
 ```
 
 ### 3. Service Account (Optional)
 
 ```bash
+
+# Set default project for gcloud (optional but recommended)
+gcloud config set project "$PROJECT_ID"
+
+# ----------------------------------------------------------------------------
 # Create service account
-gcloud iam service-accounts create alcohol-labeling-app \
-    --display-name="Alcohol Labeling App"
+# ----------------------------------------------------------------------------
+gcloud iam service-accounts create "$SERVICE_ACCOUNT_NAME" \
+  --display-name="Alcohol Labeling App"
 
-# Grant permissions
-gcloud projects add-iam-policy-binding your-project-id \
-    --member="serviceAccount:alcohol-labeling-app@your-project-id.iam.gserviceaccount.com" \
-    --role="roles/storage.objectAdmin"
+# ----------------------------------------------------------------------------
+# Grant bucket-level permissions (Object Admin is sufficient; no list required)
+# ----------------------------------------------------------------------------
+gcloud storage buckets add-iam-policy-binding "gs://$BUCKET_NAME" \
+  --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+  --role="roles/storage.objectAdmin"
 
-# Create and download key
+# If you prefer project-level permissions instead (broader scope):
+# gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+#   --member="serviceAccount:${SERVICE_ACCOUNT_EMAIL}" \
+#   --role="roles/storage.objectAdmin"
+
+# ----------------------------------------------------------------------------
+# Create and download key (store in mounted credentials/ path)
+# ----------------------------------------------------------------------------
 gcloud iam service-accounts keys create credentials/service-account-key.json \
-    --iam-account=alcohol-labeling-app@your-project-id.iam.gserviceaccount.com
+  --iam-account="$SERVICE_ACCOUNT_EMAIL"
 ```
 
 ## Troubleshooting
@@ -384,6 +407,12 @@ For high-traffic deployments, consider:
    ./scripts/docker-setup.sh ssl
    ```
 
+5. **Rebuild**
+   ```
+   docker compose build app && docker compose up -d app
+   docker compose logs -f app
+   ```
+   
 ## Support
 
 For issues and questions:

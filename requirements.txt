@@ -2,3 +2,5 @@ google-genai
 Pillow
 PyYAML
 python-dotenv
+fuzzywuzzy
+python-Levenshtein
