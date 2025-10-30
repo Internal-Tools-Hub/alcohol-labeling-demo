@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Alcohol Labeling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <nav class="mb-6 border-b">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500" href="/">Alcohol Labeling</a>
+        <div class="flex items-center gap-4">
+          <a class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500" href="/">Home</a>
+          <a class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500" href="/submissions/">Submissions</a>
+          <a class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500" href="/companies/">Companies</a>
+          {% if user.is_authenticated %}
+            <span class="text-gray-600">{{ user.username }}</span>
+            <a class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500" href="/accounts/logout/">Logout</a>
+          {% else %}
+            <a class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500" href="/accounts/login/">Login</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+    <div class="max-w-6xl mx-auto px-4">
+      {% for message in messages %}
+        {% if 'error' in message.tags %}
+          <div class="mb-3 p-3 rounded bg-red-100 text-red-800">{{ message }}</div>
+        {% elif 'warning' in message.tags %}
+          <div class="mb-3 p-3 rounded bg-yellow-100 text-yellow-800">{{ message }}</div>
+        {% else %}
+          <div class="mb-3 p-3 rounded bg-green-100 text-green-800">{{ message }}</div>
+        {% endif %}
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </div>
+  </body>
+  </html>
+
+

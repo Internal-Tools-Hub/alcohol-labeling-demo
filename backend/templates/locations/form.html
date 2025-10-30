@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<nav class="flex mb-4 text-sm text-gray-600" aria-label="Breadcrumb">
+  <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+    <li class="inline-flex items-center">
+      <a href="{% url 'company_list' %}" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">Companies</a>
+    </li>
+    <li>
+      <div class="flex items-center">
+        <span class="mx-2">/</span>
+        <a href="{% url 'company_detail' company.id %}" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">{{ company.name }}</a>
+      </div>
+    </li>
+  </ol>
+  </nav>
+<form method="post">
+  {% csrf_token %}
+  <div class="space-y-12">
+    <div class="border-b border-gray-900/10 pb-12">
+      <h2 class="text-base/7 font-semibold text-gray-900">Location</h2>
+      <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        <div class="sm:col-span-3">
+          <label class="block text-sm/6 font-medium text-gray-900">Name</label>
+          <div class="mt-2">{{ form.name }}</div>
+        </div>
+        <div class="sm:col-span-2 sm:col-start-1">
+          <label class="block text-sm/6 font-medium text-gray-900">City</label>
+          <div class="mt-2">{{ form.city }}</div>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm/6 font-medium text-gray-900">State / Province</label>
+          <div class="mt-2">{{ form.state }}</div>
+        </div>
+        <div class="sm:col-span-3">
+          <label class="block text-sm/6 font-medium text-gray-900">Country</label>
+          <div class="mt-2">{{ form.country }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 flex items-center justify-end gap-x-3">
+    <a href="{% url 'location_list' company_id=company.id %}" class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500">Cancel</a>
+    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Save</button>
+  </div>
+</form>
+{% endblock %}
+
+

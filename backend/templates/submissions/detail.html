@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-2xl font-semibold mb-4">Submission #{{ submission.id }}</h2>
+<div class="space-y-1 mb-4">
+  <p><span class="font-semibold">Company:</span> {{ submission.company.name }}</p>
+  <p><span class="font-semibold">Location:</span> {{ submission.location.name }}</p>
+  <p><span class="font-semibold">Status:</span> {{ submission.status }}</p>
+  <div class="mt-2">
+    <form method="post" action="{% url 'submission_reanalyze' submission.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
+        AI Re-analyze
+      </button>
+    </form>
+  </div>
+  <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+    <p><span class="font-semibold">Brand (form):</span> {{ submission.brand_name }}</p>
+    <p><span class="font-semibold">Class/Type (form):</span> {{ submission.product_class_type }}</p>
+    <p><span class="font-semibold">Alcohol (form):</span> {{ submission.alcohol_content }}</p>
+    <p><span class="font-semibold">Net Contents (form):</span> {{ submission.net_contents }}</p>
+  </div>
+</div>
+
+<h3 class="text-xl font-semibold mb-2">Images</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  {% for img in images_with_urls %}
+    <div class="border rounded p-2">
+      {% if img.signed_url %}
+        <img src="{{ img.signed_url }}" alt="image {{ forloop.counter }}" class="w-full h-auto mb-2" />
+      {% elif img.image_url %}
+        <img src="{{ img.image_url }}" alt="image {{ forloop.counter }}" class="w-full h-auto mb-2" />
+      {% endif %}
+      <p class="text-xs break-all">{{ img.gcs_uri }}</p>
+      {% if img.verification %}
+        <div class="mt-2 text-xs">
+          <div>
+            <span class="font-semibold">Brand:</span>
+            <span class="{% if img.verification.brand_name.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.verification.brand_name.match }}</span>
+          </div>
+          <div>
+            <span class="font-semibold">Class/Type:</span>
+            <span class="{% if img.verification.product_class_type.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.verification.product_class_type.match }}</span>
+          </div>
+          <div>
+            <span class="font-semibold">Alcohol:</span>
+            <span class="{% if img.verification.alcohol_content.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.verification.alcohol_content.match }}</span>
+          </div>
+          <div>
+            <span class="font-semibold">Net contents:</span>
+            <span class="{% if img.verification.net_contents.match %}text-green-700{% else %}text-yellow-700{% endif %}">{{ img.verification.net_contents.match }}</span>
+          </div>
+          <div>
+            <span class="font-semibold">Gov warning:</span>
+            <span class="{% if img.verification.government_warning_present.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.verification.government_warning_present.match }}</span>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p>No images.</p>
+  {% endfor %}
+  </div>
+
+<h3 class="text-xl font-semibold mb-2">Verification</h3>
+{% if submission.verification_result %}
+  <div class="rounded border p-3 text-sm">
+    {% with v=submission.verification_result %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div>
+          <span class="font-semibold">Brand match:</span>
+          <span class="{% if v.brand_name.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.brand_name.match }}</span>
+        </div>
+        <div>
+          <span class="font-semibold">Class/Type match:</span>
+          <span class="{% if v.product_class_type.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.product_class_type.match }}</span>
+        </div>
+        <div>
+          <span class="font-semibold">Alcohol content match:</span>
+          <span class="{% if v.alcohol_content.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.alcohol_content.match }}</span>
+        </div>
+        <div>
+          <span class="font-semibold">Net contents match (optional):</span>
+          <span class="{% if v.net_contents.match %}text-green-700{% else %}text-yellow-700{% endif %}">{{ v.net_contents.match }}</span>
+        </div>
+        <div>
+          <span class="font-semibold">Government warning present:</span>
+          <span class="{% if v.government_warning_present.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.government_warning_present.match }}</span>
+        </div>
+      </div>
+      <div class="mt-3">
+        <span class="font-semibold">Overall:</span>
+        <span class="{% if v.all_pass %}text-green-800{% else %}text-red-800{% endif %}">{% if v.all_pass %}PASS{% else %}FAIL{% endif %}</span>
+      </div>
+    {% endwith %}
+  </div>
+{% else %}
+  <p class="text-sm">No verification results.</p>
+{% endif %}
+
+{% endblock %}
+
+

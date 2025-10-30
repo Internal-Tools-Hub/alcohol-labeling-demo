@@ -1,7 +1,7 @@
 # Alcohol Label Verification App - Makefile
 # Provides convenient commands for Docker management
 
-.PHONY: help dev prod stop logs clean ssl setup
+.PHONY: help dev prod stop logs clean ssl setup migrate makemigrations superuser manage tailwind-init tailwind-install tailwind-dev
 
 # Default target
 help:
@@ -15,6 +15,13 @@ help:
 	@echo "  make clean    Stop and clean up all resources"
 	@echo "  make ssl      Setup SSL certificates (production only)"
 	@echo "  make setup    Initial setup and configuration"
+	@echo "  make migrate  Run Django migrations"
+	@echo "  make makemigrations Create Django migrations"
+	@echo "  make superuser Create Django superuser"
+	@echo "  make manage CMD='shell' Run arbitrary manage.py command"
+	@echo "  make tailwind-init     Initialize django-tailwind theme app"
+	@echo "  make tailwind-install  Install Tailwind NPM deps in the theme"
+	@echo "  make tailwind-dev      Run Tailwind dev (hot reload)"
 	@echo "  make help     Show this help message"
 	@echo ""
 	@echo "Examples:"
@@ -56,8 +63,34 @@ dev: check-docker
 	@sleep 10
 	@$(DOCKER_COMPOSE) up -d app
 	@echo "Development environment started!"
-	@echo "Application: http://localhost:8501"
+	@echo "Application: http://localhost:8000"
 	@echo "Database: localhost:5432"
+
+# Django management helpers
+migrate: check-docker
+	@$(DOCKER_COMPOSE) exec app python backend/manage.py migrate
+
+makemigrations: check-docker
+	@$(DOCKER_COMPOSE) exec app python backend/manage.py makemigrations
+
+superuser: check-docker
+	@$(DOCKER_COMPOSE) exec app python backend/manage.py createsuperuser
+
+manage: check-docker
+	@if [ -z "$(CMD)" ]; then \
+		echo "Usage: make manage CMD='shell'"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec app python backend/manage.py $(CMD)
+
+tailwind-init: check-docker
+	@$(DOCKER_COMPOSE) exec app python backend/manage.py tailwind init
+
+tailwind-install: check-docker
+	@$(DOCKER_COMPOSE) exec app python backend/manage.py tailwind install
+
+tailwind-dev: check-docker
+	@$(DOCKER_COMPOSE) exec app python backend/manage.py tailwind dev
 
 # Production environment
 prod: check-docker

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from google import genai
 from google.genai import types
-from PIL import Image
+from PIL import Image, ImageChops
 from io import BytesIO
 from dotenv import load_dotenv
 
@@ -51,11 +51,18 @@ def create_label_prompt(item, category, is_pass=True, label_side="front"):
         location = item.get('distillery_location', 'Louisville, Kentucky')
         bottler = item.get('bottler_name', 'Sample Distillery')
     
+    # Capture exact bottler name as provided (if present) to include verbatim on labels
+    exact_bottler_name = item.get('bottler_name')
+    
     any_label_info = [
         f"Net contents: {item['net_contents']}",
         f"Name and address: {bottler}, {location}",
         f"Health warning statement: {item.get('health_warning', 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.')}"
     ]
+    
+    # Ensure exact bottler name appears verbatim on labels
+    if exact_bottler_name:
+        any_label_info.insert(0, f"Include this exact bottler name (verbatim, no changes): {exact_bottler_name}")
     
     # Add category-specific information
     if category == "liquor":
@@ -78,6 +85,9 @@ def create_label_prompt(item, category, is_pass=True, label_side="front"):
     
     if label_side == "front":
         label_content = same_field_vision + [f"Description: {item['description']}"]
+        # Also require the exact bottler name on front labels
+        if exact_bottler_name:
+            label_content.append(f"Include this exact bottler name (verbatim, no changes): {exact_bottler_name}")
         label_type = "FRONT LABEL"
         layout_notes = "Focus on brand name, product type, and alcohol content prominently displayed together. Include product description and basic information."
     else:
@@ -100,6 +110,8 @@ def create_label_prompt(item, category, is_pass=True, label_side="front"):
     - Appropriate colors for {category}
     - Text should be clearly readable
     - Label proportions should be realistic (like a typical bottle label)
+    - Tightly crop the label to its content. Minimize white margins/padding.
+    - No large borders; leave at most a very small safety margin (≤10px).
     - {layout_notes}
     """
 
@@ -176,6 +188,8 @@ def generate_image(prompt, output_path, overwrite=False):
         for part in response.candidates[0].content.parts:
             if part.inline_data is not None:
                 image = Image.open(BytesIO(part.inline_data.data))
+                # Trim surrounding white space to minimize padding
+                image = trim_whitespace(image)
                 image.save(output_path)
                 print(f"Generated: {output_path}")
                 return True
@@ -238,6 +252,39 @@ def generate_category_images(category, overwrite=False, only_id: str | None = No
             filename = f"{item['brand_name'].replace(' ', '_').lower()}_fail_{i:02d}_front.png"
         output_path = fail_front_dir / filename
         generate_image(prompt, output_path, overwrite)
+
+def trim_whitespace(image: Image.Image, background_color=(255, 255, 255), tolerance: int = 8, safety_margin: int = 6) -> Image.Image:
+    """Trim near-white borders from an image while preserving a small safety margin.
+
+    Parameters:
+        image: PIL Image to trim.
+        background_color: Expected background color tuple.
+        tolerance: Allowed per-channel deviation from the background color to still count as background.
+        safety_margin: Pixels to keep around detected content after trimming.
+
+    Returns:
+        Cropped PIL Image with minimal white padding. Returns original on failure.
+    """
+    try:
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+
+        bg = Image.new('RGB', image.size, background_color)
+        # Highlight differences from background; bias by tolerance to ignore near-white
+        diff = ImageChops.difference(image, bg)
+        diff = ImageChops.add(diff, diff, 2.0, -tolerance)
+        bbox = diff.getbbox()
+        if not bbox:
+            return image
+
+        left, top, right, bottom = bbox
+        left = max(left - safety_margin, 0)
+        top = max(top - safety_margin, 0)
+        right = min(right + safety_margin, image.width)
+        bottom = min(bottom + safety_margin, image.height)
+        return image.crop((left, top, right, bottom))
+    except Exception:
+        return image
         
         # Back label
         prompt = create_label_prompt(item, category, is_pass=False, label_side="back")

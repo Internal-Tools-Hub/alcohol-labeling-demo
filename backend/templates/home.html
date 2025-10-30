@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div class="space-y-12">
+    <div class="border-b border-gray-900/10 pb-12">
+      <h2 class="text-base/7 font-semibold text-gray-900">New Submission</h2>
+      <p class="mt-1 text-sm/6 text-gray-600">Provide product details and upload label images.</p>
+
+      <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+        <div class="sm:col-span-3">
+          <label class="block text-sm/6 font-medium text-gray-900">Company</label>
+          <div class="mt-2">{{ form.company }}</div>
+          <div class="mt-2">
+            <a href="{% url 'company_create' %}" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">New Company</a>
+          </div>
+        </div>
+        <div class="sm:col-span-3">
+          <label class="block text-sm/6 font-medium text-gray-900">Location</label>
+          <div class="mt-2">{{ form.location }}</div>
+          <div class="mt-2">
+            <button type="button" id="new-location-btn" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">New Location</button>
+          </div>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label class="block text-sm/6 font-medium text-gray-900">Brand name</label>
+          <div class="mt-2">{{ form.brand_name }}</div>
+        </div>
+        <div class="sm:col-span-3">
+          <label class="block text-sm/6 font-medium text-gray-900">Product class/type</label>
+          <div class="mt-2">{{ form.product_class_type }}</div>
+        </div>
+
+        <div class="sm:col-span-3">
+          <label class="block text-sm/6 font-medium text-gray-900">Alcohol content</label>
+          <div class="mt-2">{{ form.alcohol_content }}</div>
+        </div>
+        <div class="sm:col-span-3">
+          <label class="block text-sm/6 font-medium text-gray-900">Net contents</label>
+          <div class="mt-2">{{ form.net_contents }}</div>
+        </div>
+
+        <div class="col-span-full">
+          <label class="block text-sm/6 font-medium text-gray-900">Front label image</label>
+          <div class="mt-2">{{ form.front_image }}</div>
+        </div>
+        <div class="col-span-full">
+          <label class="block text-sm/6 font-medium text-gray-900">Back label image (optional)</label>
+          <div class="mt-2">{{ form.back_image }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 flex items-center justify-end gap-x-3">
+    <a href="{% url 'submission_list' %}" class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500">All submissions</a>
+    <a href="{% url 'company_list' %}" class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500">Companies</a>
+    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Submit</button>
+  </div>
+</form>
+{% endblock %}
+
+<script>
+  (function() {
+    const companySelect = document.getElementById('id_company');
+    const newLocationBtn = document.getElementById('new-location-btn');
+    if (!newLocationBtn) return;
+    newLocationBtn.addEventListener('click', () => {
+      const cid = companySelect && companySelect.value;
+      if (!cid) { alert('Please select a company first.'); return; }
+      window.location.href = `/companies/${cid}/locations/create/`;
+    });
+  })();
+  </script>
+
+

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="post" class="max-w-sm">
+  {% csrf_token %}
+
+  <div class="space-y-12">
+    <div class="border-b border-gray-900/10 pb-12">
+      <h2 class="text-base/7 font-semibold text-gray-900">Login</h2>
+      <div class="mt-10 grid grid-cols-1 gap-y-6">
+        <div>
+          <label class="block text-sm/6 font-medium text-gray-900">Username</label>
+          <div class="mt-2">
+            {{ form.username.as_widget(attrs={
+              'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+            }) }}
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm/6 font-medium text-gray-900">Password</label>
+          <div class="mt-2">
+            {{ form.password.as_widget(attrs={
+              'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+            }) }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 flex items-center justify-end gap-x-3">
+    <a href="/" class="relative cursor-pointer rounded-md bg-transparent font-semibold text-blue-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-600 hover:text-blue-500">Cancel</a>
+    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Login</button>
+  </div>
+</form>
+{% endblock %}
+
+

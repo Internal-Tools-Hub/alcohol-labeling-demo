@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Delete Location</h3>
+<p>Are you sure you want to delete {{ object.name }}?</p>
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">Delete</button>
+  <a class="btn btn-secondary" href="{% url 'location_list' object.company.id %}">Cancel</a>
+{% endblock %}
+
+
