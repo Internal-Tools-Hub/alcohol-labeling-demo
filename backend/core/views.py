@@ -167,10 +167,18 @@ class HomeView(LoginRequiredMixin, TemplateView):
                             if not extracted.get("all_text_found") and isinstance(response_text, str):
                                 extracted["all_text_found"] = response_text
 
+                        # Normalize alcohol_content: strip % if present for numeric comparison
+                        ac_normalized = submission.alcohol_content
+                        if isinstance(ac_normalized, str):
+                            ac_normalized = ac_normalized.replace("%", "").strip()
+                        try:
+                            ac_normalized = float(ac_normalized) if ac_normalized else None
+                        except (ValueError, TypeError):
+                            ac_normalized = submission.alcohol_content
                         form_data = {
                             "brand_name": submission.brand_name or submission.company.name,
                             "product_type": submission.product_class_type,
-                            "alcohol_content": submission.alcohol_content,
+                            "alcohol_content": ac_normalized,
                             "net_contents": submission.net_contents,
                         }
                         try:

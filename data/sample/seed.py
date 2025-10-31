@@ -16,19 +16,26 @@ from dotenv import load_dotenv  # noqa: E402
 # Load env explicitly from project root
 load_dotenv(PROJECT_ROOT / '.env')
 
-from config import Config  # noqa: E402
-
-# Bootstrap Django so we can use the app's ORM/models
 import django  # noqa: E402
+# Make sure project root is importable so 'backend' is a package
+# In Docker, PYTHONPATH is usually /app, so backend should already be importable
+# For local execution, we need to add project root
+project_root_path = str(PROJECT_ROOT)
+if project_root_path not in sys.path:
+    sys.path.insert(0, project_root_path)
+# Also add the backend directory so 'core' app can be imported as 'core'
 backend_path = str(PROJECT_ROOT / 'backend')
 if backend_path not in sys.path:
     sys.path.insert(0, backend_path)
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+# Explicitly override any Dockerfile env var that might be wrong
+os.environ['DJANGO_SETTINGS_MODULE'] = 'backend.config.settings'
 django.setup()
-from backend.core.services import upload_file_to_gcs  # noqa: E402
+from django.conf import settings  # noqa: E402
+from core.services import upload_file_to_gcs  # noqa: E402
 from django.core.files import File  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
-from backend.core.models import Company, Location, Submission, SubmissionImage  # noqa: E402
+from core.models import Company, Location, Submission, SubmissionImage  # noqa: E402
 
 
 def parse_args():
@@ -159,33 +166,46 @@ def seed_category(category: str, only_id: Optional[str] = None):
             front_file = CURRENT_FILE.parent / category / 'pass' / 'front' / f"{base_id}_front.png"
             back_file = CURRENT_FILE.parent / category / 'pass' / 'back' / f"{base_id}_back.png"
         else:
-            # Fallback: upload all pngs matching brand if needed (not expected here)
             front_file = None
             back_file = None
 
-        # Upload and insert submissions for each existing side
-        for side, file_path in [('front', front_file), ('back', back_file)]:
-            if not file_path:
-                continue
-            gcs_url = upload_image_to_gcs(file_path, category)
-            if not gcs_url:
-                continue
-            submission = Submission.objects.create(
-                user=user,
-                company=company,
-                location=location,
-                gcs_uri=gcs_url,
-                brand_name=item.get('brand_name', ''),
-                product_class_type=item.get('product_type', ''),
-                alcohol_content=f"{item.get('alcohol_content', '')}%" if item.get('alcohol_content') is not None else '',
-                net_contents=item.get('net_contents', ''),
-                intentional_fail=False,
-                status=Submission.STATUS_PENDING,
-            )
-            # Attach image file to SubmissionImage
+        files_to_attach = []
+        if front_file and front_file.exists():
+            files_to_attach.append(front_file)
+        if back_file and back_file.exists():
+            files_to_attach.append(back_file)
+        if not files_to_attach:
+            continue
+
+        # Upload first file to set submission gcs_uri
+        first_gs = upload_image_to_gcs(files_to_attach[0], category)
+        if not first_gs:
+            continue
+
+        # Strip % from alcohol_content before storing (store numeric value only)
+        ac_raw = item.get('alcohol_content', '')
+        ac_clean = str(ac_raw).replace('%', '').strip() if ac_raw is not None else ''
+        submission = Submission.objects.create(
+            user=user,
+            company=company,
+            location=location,
+            gcs_uri=first_gs,
+            brand_name=item.get('brand_name', ''),
+            product_class_type=item.get('product_type', ''),
+            alcohol_content=ac_clean,
+            net_contents=item.get('net_contents', ''),
+            intentional_fail=False,
+            status=Submission.STATUS_PENDING,
+        )
+
+        # Attach all images
+        for file_path in files_to_attach:
             try:
+                gs_url = first_gs if file_path == files_to_attach[0] else upload_image_to_gcs(file_path, category)
+                if not gs_url:
+                    continue
                 with open(file_path, 'rb') as f:
-                    img = SubmissionImage.objects.create(submission=submission, gcs_uri=gcs_url)
+                    img = SubmissionImage.objects.create(submission=submission, gcs_uri=gs_url)
                     img.image.save(file_path.name, File(f), save=True)
             except Exception as e:
                 print(f"Failed to attach image file {file_path}: {e}")
@@ -197,32 +217,44 @@ def seed_category(category: str, only_id: Optional[str] = None):
         company, location = ensure_company_and_location(category, item)
 
         base_id = item.get('id')
-        candidates = []
+        files_to_attach = []
         if base_id:
-            # Prefer front, also try back if present in data folder
-            candidates.append(CURRENT_FILE.parent / category / 'fail' / 'front' / f"{base_id}_front.png")
-            candidates.append(CURRENT_FILE.parent / category / 'fail' / 'back' / f"{base_id}_back.png")
+            front = CURRENT_FILE.parent / category / 'fail' / 'front' / f"{base_id}_front.png"
+            back = CURRENT_FILE.parent / category / 'fail' / 'back' / f"{base_id}_back.png"
+            if front.exists():
+                files_to_attach.append(front)
+            if back.exists():
+                files_to_attach.append(back)
+        if not files_to_attach:
+            continue
 
-        for file_path in candidates:
-            gcs_url = upload_image_to_gcs(file_path, category)
-            if not gcs_url:
-                continue
-            submission = Submission.objects.create(
-                user=ensure_demo_user(),
-                company=company,
-                location=location,
-                gcs_uri=gcs_url,
-                brand_name=item.get('brand_name', ''),
-                product_class_type=item.get('product_type', ''),
-                alcohol_content=f"{item.get('alcohol_content', '')}%" if item.get('alcohol_content') is not None else '',
-                net_contents=item.get('net_contents', ''),
-                intentional_fail=True,
-                intentional_failure_reason=item.get('failure_reason', ''),
-                status=Submission.STATUS_PENDING,
-            )
+        first_gs = upload_image_to_gcs(files_to_attach[0], category)
+        if not first_gs:
+            continue
+
+        # Strip % from alcohol_content before storing (store numeric value only)
+        ac_raw = item.get('alcohol_content', '')
+        ac_clean = str(ac_raw).replace('%', '').strip() if ac_raw is not None else ''
+        submission = Submission.objects.create(
+            user=ensure_demo_user(),
+            company=company,
+            location=location,
+            gcs_uri=first_gs,
+            brand_name=item.get('brand_name', ''),
+            product_class_type=item.get('product_type', ''),
+            alcohol_content=ac_clean,
+            net_contents=item.get('net_contents', ''),
+            intentional_fail=True,
+            intentional_failure_reason=item.get('failure_reason', ''),
+            status=Submission.STATUS_PENDING,
+        )
+        for file_path in files_to_attach:
             try:
+                gs_url = first_gs if file_path == files_to_attach[0] else upload_image_to_gcs(file_path, category)
+                if not gs_url:
+                    continue
                 with open(file_path, 'rb') as f:
-                    img = SubmissionImage.objects.create(submission=submission, gcs_uri=gcs_url)
+                    img = SubmissionImage.objects.create(submission=submission, gcs_uri=gs_url)
                     img.image.save(file_path.name, File(f), save=True)
             except Exception as e:
                 print(f"Failed to attach image file {file_path}: {e}")
@@ -235,16 +267,16 @@ def main():
         print('Please specify at least one category: --all, --beer, --wine, or --liquor')
         return
 
-    # Validate minimal config for GCS/DB
+    # Validate minimal config for GCS/DB using Django settings
     missing = []
-    if not Config.GCS_BUCKET_NAME:
+    if not getattr(settings, 'GCS_BUCKET_NAME', None):
         missing.append('GCS_BUCKET_NAME')
-    if not Config.GCP_PROJECT_ID:
+    if not getattr(settings, 'GCP_PROJECT_ID', None):
         missing.append('GCP_PROJECT_ID')
-    if not Config.DATABASE_URL:
-        missing.append('DATABASE_URL')
+    if not getattr(settings, 'DATABASES', None):
+        missing.append('DATABASES')
     if missing:
-        raise RuntimeError(f"Missing required env: {', '.join(missing)}")
+        raise RuntimeError(f"Missing required settings/env: {', '.join(missing)}")
 
     categories = []
     if args.all or args.beer:

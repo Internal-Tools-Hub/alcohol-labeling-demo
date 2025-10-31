@@ -24,7 +24,11 @@ apt-get install -y \
   apt-transport-https \
   ufw \
   fail2ban \
-  unattended-upgrades || true
+  unattended-upgrades \
+  python3 \
+  python3-venv \
+  python3-pip \
+  python-is-python3 || true
 
 echo "[3/10] Adding Docker's official GPG key and APT repository..."
 install -m 0755 -d /etc/apt/keyrings

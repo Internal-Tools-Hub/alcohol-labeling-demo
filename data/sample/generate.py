@@ -111,6 +111,8 @@ def create_label_prompt(item, category, is_pass=True, label_side="front"):
     - Professional layout with clear hierarchy
     - Appropriate colors for {category}
     - Text should be clearly readable
+    - Do not use curved/arched text; keep all text straight and baseline-aligned
+    - Do not use gradient fills on text; use solid color text only
     - Label proportions should be realistic (like a typical bottle label)
     - Tightly crop the label to its content. Minimize white margins/padding.
     - No large borders; leave at most a very small safety margin (≤10px).

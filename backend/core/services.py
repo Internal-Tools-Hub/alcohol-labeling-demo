@@ -164,13 +164,14 @@ def call_gemini_with_image_bytes(image_bytes: bytes, model: str) -> Any:
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
     prompt = (
         "Analyze this alcohol beverage label image and return ONLY valid JSON with fields: "
-        "brand_name (string), product_type (string), alcohol_content (number), net_contents (string), "
+        "brand_name (string), product_type (string), alcohol_content (number, numeric value only, no % sign), net_contents (string), "
         "government_warning_present (boolean), all_text_found (string), confidence (0-1).\n\n"
         "IMPORTANT EXTRACTION RULES:\n"
         "- Read literal strings from the image; do not guess or generalize.\n"
         "- product_type must be the specific class/type printed on the label (e.g., 'Cabernet Sauvignon', 'IPA', 'Bourbon Whiskey').\n"
         "  Do NOT return generic categories like 'Wine', 'Beer', or 'Liquor' if a specific type is present.\n"
         "  If the provided expected product class/type string appears anywhere in the label text, set product_type exactly to that string.\n"
+        "- alcohol_content: Extract the numeric percentage value only (e.g., if label shows '5.2%', return 5.2 as a number, not a string with %).\n"
         "- Brand normalization: Extract the core brand without entity/corporate suffixes or location qualifiers.\n"
         "  Treat suffixes like 'Winery', 'Brewery', 'Distillery', 'Company', 'Co.', 'LLC', 'Inc.', 'Ltd.' as non-essential.\n"
         "  Example: If the label shows 'Sunset Hills Winery', return brand_name='Sunset Hills'.\n"

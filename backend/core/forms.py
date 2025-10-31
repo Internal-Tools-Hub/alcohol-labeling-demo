@@ -101,6 +101,14 @@ class SubmissionForm(forms.ModelForm):
         # Make brand_name optional in the form as it overrides company name when provided
         self.fields["brand_name"].required = False
 
+    def clean_alcohol_content(self):
+        """Clean alcohol_content to store as numeric string without %."""
+        ac = self.cleaned_data.get("alcohol_content")
+        if ac is not None:
+            # Convert to string and ensure no % sign
+            return str(ac).replace("%", "").strip()
+        return ""
+
 
 
 class CommentForm(forms.ModelForm):
