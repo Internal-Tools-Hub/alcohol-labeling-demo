@@ -121,11 +121,17 @@ logs: check-docker
 # Setup SSL certificates
 ssl: check-docker
 	@echo "Setting up SSL certificates..."
-	@if [ -z "$$DOMAIN_NAME" ]; then \
-		echo "Error: DOMAIN_NAME environment variable is required"; \
-		echo "Please set DOMAIN_NAME in your .env file"; \
+	@if [ ! -f .env ]; then \
+		echo "Error: .env file not found"; \
 		exit 1; \
 	fi
+	@DOMAIN_NAME=$$(grep -E '^DOMAIN_NAME=' .env | cut -d '=' -f2- | xargs); \
+	if [ -z "$$DOMAIN_NAME" ]; then \
+		echo "Error: DOMAIN_NAME not found in .env file"; \
+		echo "Please set DOMAIN_NAME=your-domain.com in your .env file"; \
+		exit 1; \
+	fi; \
+	echo "Using domain: $$DOMAIN_NAME"
 	@$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml up -d nginx
 	@$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml --profile ssl-setup run --rm certbot
 	@echo "SSL certificates obtained"
