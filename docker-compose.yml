@@ -55,6 +55,7 @@ services:
       - ./data:/app/data:ro
       - ./credentials:/app/credentials:ro
       - app_uploads:/app/uploads
+      - app_staticfiles:/app/backend/staticfiles
     ports:
       - "8000:8000"
     depends_on:
@@ -70,7 +71,7 @@ services:
       - alcohol-labeling-network
     restart: unless-stopped
     command: >
-      sh -c "python backend/manage.py makemigrations && python backend/manage.py migrate && python backend/manage.py runserver 0.0.0.0:8000"
+      sh -c "python backend/manage.py makemigrations && python backend/manage.py migrate && python backend/manage.py collectstatic --noinput && python backend/manage.py runserver 0.0.0.0:8000"
 
   # Nginx Reverse Proxy (production only)
   nginx:
@@ -84,6 +85,8 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/webroot:/var/www/certbot:ro
       - nginx_logs:/var/log/nginx
+      - app_staticfiles:/app/backend/staticfiles:ro
+      - app_uploads:/app/uploads:ro
     depends_on:
       - app
     networks:
@@ -96,6 +99,8 @@ volumes:
   postgres_data:
     driver: local
   app_uploads:
+    driver: local
+  app_staticfiles:
     driver: local
   nginx_logs:
     driver: local
