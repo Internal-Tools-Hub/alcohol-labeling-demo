@@ -486,14 +486,15 @@ class SubmissionReanalyzeView(LoginRequiredMixin, View):
             }
             submission.status = Submission.STATUS_PROCESSED
             submission.save(update_fields=["gemini_response", "verification_result", "status"])
-            messages.success(request, "Re-analysis complete.")
+            messages.success(request, f"Re-analysis complete for submission #{submission.pk}.")
         except Exception as exc:
             logger.exception("SubmissionReanalyzeView: failed re-analysis: %s", exc)
             submission.status = Submission.STATUS_FAILED
             submission.error_message = str(exc)
             submission.save(update_fields=["status", "error_message"])
-            messages.error(request, f"Re-analysis failed: {exc}")
-        return redirect("submission_detail", pk=submission.pk)
+            messages.error(request, f"Re-analysis failed for submission #{submission.pk}: {exc}")
+        # Redirect back to list page for bulk processing
+        return redirect("submission_list")
 
 
 class SubmissionCommentCreateView(LoginRequiredMixin, View):

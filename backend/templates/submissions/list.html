@@ -29,8 +29,22 @@
           <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
             <a class="font-medium text-blue-600 dark:text-blue-500 hover:underline" href="{% url 'submission_detail' s.id %}">#{{ s.id }}</a>
           </th>
-          <td class="px-6 py-4">{{ s.company.name }}</td>
-          <td class="px-6 py-4">{{ s.status }}</td>
+          <td class="px-6 py-4">
+            {{ s.company.name }}
+            {% if s.intentional_fail %}
+              <span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-red-900 dark:text-red-300">Intentional Fail</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if s.status == "pending" %}
+              <form method="post" action="{% url 'submission_reanalyze' s.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="text-xs font-medium px-2.5 py-1 rounded-sm bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">AI Reanalyze</button>
+              </form>
+            {% else %}
+              <span class="text-xs font-medium px-2.5 py-1 rounded-sm {% if s.status == 'processed' %}bg-green-100 text-green-800{% elif s.status == 'failed' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">{{ s.status }}</span>
+            {% endif %}
+          </td>
           <td class="px-6 py-4">
             {% if ver and ver.brand_name.match %}
               <span class="text-green-600">✓</span>
