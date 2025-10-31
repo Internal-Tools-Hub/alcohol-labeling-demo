@@ -23,7 +23,7 @@ cd alcohol-labeling-demo
 
 # Install Docker Engine + Compose plugin
 # Rocky Linux / RHEL:
-sudo bash scripts/bootstrap_rocky_docker.sh
+sudo bash scripts/bootstrap_linux_docker.sh
 # Ubuntu (alternative): https://docs.docker.com/engine/install/ubuntu/
 
 # Re-login to pick up docker group
@@ -49,6 +49,23 @@ cp env.example .env
 # Place credentials (optional if using instance metadata auth)
 mkdir -p credentials
 # Copy your service account key into credentials/service-account-key.json
+```
+
+### Optional: Run Python utilities outside Docker (use a virtualenv)
+Ubuntu enforces PEP 668 (externally managed Python). Use a virtual environment for local Python commands (e.g., running `data/sample/seed.py`). The bootstrap script installs `python3`, `python3-venv`, and `python3-pip`.
+
+```bash
+cd ~/alcohol-labeling-demo
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+# Example: run the seeder locally (outside Docker)
+python data/sample/seed.py --beer
+
+# When done
+deactivate
 ```
 
 ## 3) Start services
