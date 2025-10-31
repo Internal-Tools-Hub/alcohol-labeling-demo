@@ -938,7 +938,7 @@ class CompanyCreateView(LoginRequiredMixin, CreateView):
     model = Company
     form_class = CompanyForm
     template_name = "companies/form.html"
-    success_url = reverse_lazy("company_list")
+    success_url = reverse_lazy("home")
 
 
 class CompanyUpdateView(LoginRequiredMixin, UpdateView):
