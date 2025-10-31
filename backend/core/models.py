@@ -62,6 +62,10 @@ class Submission(TimestampedModel):
     net_contents = models.CharField(max_length=50, blank=True)
     # Verification results summary
     verification_result = models.JSONField(blank=True, null=True)
+    # Admin/seed-only metadata
+    intentional_fail = models.BooleanField(default=False)
+    intentional_failure_reason = models.TextField(blank=True)
+    regulatory_citation = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     error_message = models.TextField(blank=True)
 

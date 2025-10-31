@@ -179,6 +179,7 @@ def seed_category(category: str, only_id: Optional[str] = None):
                 product_class_type=item.get('product_type', ''),
                 alcohol_content=f"{item.get('alcohol_content', '')}%" if item.get('alcohol_content') is not None else '',
                 net_contents=item.get('net_contents', ''),
+                intentional_fail=False,
                 status=Submission.STATUS_PENDING,
             )
             # Attach image file to SubmissionImage
@@ -215,6 +216,8 @@ def seed_category(category: str, only_id: Optional[str] = None):
                 product_class_type=item.get('product_type', ''),
                 alcohol_content=f"{item.get('alcohol_content', '')}%" if item.get('alcohol_content') is not None else '',
                 net_contents=item.get('net_contents', ''),
+                intentional_fail=True,
+                intentional_failure_reason=item.get('failure_reason', ''),
                 status=Submission.STATUS_PENDING,
             )
             try:

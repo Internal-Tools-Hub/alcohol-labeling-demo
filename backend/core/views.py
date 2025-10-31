@@ -18,6 +18,89 @@ from .verification_service import verification_service
 logger = logging.getLogger(__name__)
 
 
+def _convert_verification_to_legacy(fields: dict, submission: Submission) -> dict:
+    """
+    Convert verification service results to legacy format while preserving expected/extracted values.
+    """
+    brand_field = fields.get("brand_name", {})
+    type_field = fields.get("product_type", {})
+    ac_field = fields.get("alcohol_content", {})
+    net_field = fields.get("net_contents", {})
+    gov_field = fields.get("government_warning", {})
+    
+    return {
+        "brand_name": {
+            "expected": brand_field.get("expected", submission.brand_name or submission.company.name),
+            "extracted": brand_field.get("extracted"),
+            "match": bool(brand_field.get("matched")),
+        },
+        "product_class_type": {
+            "expected": type_field.get("expected", submission.product_class_type),
+            "extracted": type_field.get("extracted"),
+            "match": bool(type_field.get("matched")),
+        },
+        "alcohol_content": {
+            "expected": ac_field.get("expected", submission.alcohol_content),
+            "extracted": ac_field.get("extracted"),
+            "match": bool(ac_field.get("matched")),
+        },
+        "net_contents": {
+            "expected": net_field.get("expected", submission.net_contents),
+            "extracted": net_field.get("extracted"),
+            "match": bool(net_field.get("matched")),
+            "optional": True,
+        },
+        "government_warning_present": {
+            "expected": gov_field.get("expected", True),
+            "extracted": gov_field.get("extracted"),
+            "match": bool(gov_field.get("matched")),
+        },
+        "all_pass": all([
+            bool(brand_field.get("matched")),
+            bool(type_field.get("matched")),
+            bool(ac_field.get("matched")),
+            bool(net_field.get("matched")),
+            bool(gov_field.get("matched")),
+        ]),
+    }
+
+
+def _combine_verification_results(results: list, field_name: str, submission: Submission) -> dict:
+    """
+    Aggregate verification results across multiple images, preserving expected/extracted values.
+    """
+    # Get the first valid expected value from results
+    expected_val = None
+    for r in results:
+        if isinstance(r, dict) and field_name in r:
+            field_data = r.get(field_name, {})
+            if isinstance(field_data, dict) and "expected" in field_data:
+                expected_val = field_data.get("expected")
+                break
+    
+    # Fallback to submission data if no expected value found
+    if expected_val is None:
+        if field_name == "brand_name":
+            expected_val = submission.brand_name or submission.company.name
+        elif field_name == "product_class_type":
+            expected_val = submission.product_class_type
+        elif field_name == "alcohol_content":
+            expected_val = submission.alcohol_content
+        elif field_name == "net_contents":
+            expected_val = submission.net_contents
+        elif field_name == "government_warning_present":
+            expected_val = True
+    
+    # Check if any image matches
+    match_ok = any(bool((r.get(field_name) or {}).get("match")) for r in results if isinstance(r, dict))
+    
+    return {
+        "expected": expected_val,
+        "extracted": None,  # Aggregated results don't have a single extracted value
+        "match": match_ok,
+    }
+
+
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
@@ -114,19 +197,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
                         per_image_results.append(per_ver)
                     else:
                         fields = verification_payload.get("fields") or {}
-                        brand_ok = bool((fields.get("brand_name") or {}).get("matched"))
-                        class_ok = bool((fields.get("product_type") or {}).get("matched"))
-                        ac_ok = bool((fields.get("alcohol_content") or {}).get("matched"))
-                        net_ok = bool((fields.get("net_contents") or {}).get("matched"))
-                        gov_ok = bool((fields.get("government_warning") or {}).get("matched"))
-                        legacy = {
-                            "brand_name": {"match": brand_ok},
-                            "product_class_type": {"match": class_ok},
-                            "alcohol_content": {"match": ac_ok},
-                            "net_contents": {"match": net_ok},
-                            "government_warning_present": {"match": gov_ok},
-                            "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
-                        }
+                        legacy = _convert_verification_to_legacy(fields, submission)
                         img.gemini_response = {"raw": response_text, "verification": legacy}
                         per_image_results.append(legacy)
                     img.save()
@@ -155,19 +226,20 @@ class HomeView(LoginRequiredMixin, TemplateView):
                 # Combined verification: aggregate per-image results
                 combined = None
                 if per_image_results and isinstance(per_image_results[0], dict) and "brand_name" in per_image_results[0]:
-                    brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in per_image_results)
-                    class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in per_image_results)
-                    ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in per_image_results)
-                    net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in per_image_results)
-                    gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in per_image_results)
                     combined = {
-                        "brand_name": {"match": brand_ok},
-                        "product_class_type": {"match": class_ok},
-                        "alcohol_content": {"match": ac_ok},
-                        "net_contents": {"match": net_ok, "optional": True},
-                        "government_warning_present": {"match": gov_ok},
-                        "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                        "brand_name": _combine_verification_results(per_image_results, "brand_name", submission),
+                        "product_class_type": _combine_verification_results(per_image_results, "product_class_type", submission),
+                        "alcohol_content": _combine_verification_results(per_image_results, "alcohol_content", submission),
+                        "net_contents": {**_combine_verification_results(per_image_results, "net_contents", submission), "optional": True},
+                        "government_warning_present": _combine_verification_results(per_image_results, "government_warning_present", submission),
                     }
+                    combined["all_pass"] = all([
+                        combined["brand_name"]["match"],
+                        combined["product_class_type"]["match"],
+                        combined["alcohol_content"]["match"],
+                        combined["net_contents"]["match"],
+                        combined["government_warning_present"]["match"],
+                    ])
                 else:
                     # Fallback to simple PRD verification
                     expected_brand = submission.brand_name or submission.company.name
@@ -330,19 +402,7 @@ class SubmissionReanalyzeView(LoginRequiredMixin, View):
                     per_image_results.append(per_ver)
                 else:
                     fields = (verification_payload.get("fields") or {})
-                    brand_ok = bool((fields.get("brand_name") or {}).get("matched"))
-                    class_ok = bool((fields.get("product_type") or {}).get("matched"))
-                    ac_ok = bool((fields.get("alcohol_content") or {}).get("matched"))
-                    net_ok = bool((fields.get("net_contents") or {}).get("matched"))
-                    gov_ok = bool((fields.get("government_warning") or {}).get("matched"))
-                    legacy = {
-                        "brand_name": {"match": brand_ok},
-                        "product_class_type": {"match": class_ok},
-                        "alcohol_content": {"match": ac_ok},
-                        "net_contents": {"match": net_ok},
-                        "government_warning_present": {"match": gov_ok},
-                        "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
-                    }
+                    legacy = _convert_verification_to_legacy(fields, submission)
                     img.gemini_response = {"raw": response_text, "verification": legacy}
                     per_image_results.append(legacy)
                 # Local OCR per image
@@ -367,19 +427,20 @@ class SubmissionReanalyzeView(LoginRequiredMixin, View):
 
             combined = None
             if per_image_results and isinstance(per_image_results[0], dict) and "brand_name" in per_image_results[0]:
-                brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in per_image_results)
-                class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in per_image_results)
-                ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in per_image_results)
-                net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in per_image_results)
-                gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in per_image_results)
                 combined = {
-                    "brand_name": {"match": brand_ok},
-                    "product_class_type": {"match": class_ok},
-                    "alcohol_content": {"match": ac_ok},
-                    "net_contents": {"match": net_ok, "optional": True},
-                    "government_warning_present": {"match": gov_ok},
-                    "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                    "brand_name": _combine_verification_results(per_image_results, "brand_name", submission),
+                    "product_class_type": _combine_verification_results(per_image_results, "product_class_type", submission),
+                    "alcohol_content": _combine_verification_results(per_image_results, "alcohol_content", submission),
+                    "net_contents": {**_combine_verification_results(per_image_results, "net_contents", submission), "optional": True},
+                    "government_warning_present": _combine_verification_results(per_image_results, "government_warning_present", submission),
                 }
+                combined["all_pass"] = all([
+                    combined["brand_name"]["match"],
+                    combined["product_class_type"]["match"],
+                    combined["alcohol_content"]["match"],
+                    combined["net_contents"]["match"],
+                    combined["government_warning_present"]["match"],
+                ])
             else:
                 expected_brand = submission.brand_name or submission.company.name
                 combined = _verify_against_prd(
@@ -497,14 +558,7 @@ class SubmissionImageReanalyzeView(LoginRequiredMixin, View):
                 )
             else:
                 fields = (verification_payload.get("fields") or {})
-                legacy = {
-                    "brand_name": {"match": bool((fields.get("brand_name") or {}).get("matched"))},
-                    "product_class_type": {"match": bool((fields.get("product_type") or {}).get("matched"))},
-                    "alcohol_content": {"match": bool((fields.get("alcohol_content") or {}).get("matched"))},
-                    "net_contents": {"match": bool((fields.get("net_contents") or {}).get("matched"))},
-                    "government_warning_present": {"match": bool((fields.get("government_warning") or {}).get("matched"))},
-                }
-                legacy["all_pass"] = all(v.get("match") for v in [legacy["brand_name"], legacy["product_class_type"], legacy["alcohol_content"], legacy["net_contents"], legacy["government_warning_present"]])
+                legacy = _convert_verification_to_legacy(fields, submission)
 
             # Save per-image result
             img.gemini_response = {"raw": response_text, "verification": legacy}
@@ -538,19 +592,20 @@ class SubmissionImageReanalyzeView(LoginRequiredMixin, View):
                     combined_text += "\n"
 
             if per_image_results and isinstance(per_image_results[0], dict) and "brand_name" in per_image_results[0]:
-                brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in per_image_results)
-                class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in per_image_results)
-                ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in per_image_results)
-                net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in per_image_results)
-                gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in per_image_results)
                 combined = {
-                    "brand_name": {"match": brand_ok},
-                    "product_class_type": {"match": class_ok},
-                    "alcohol_content": {"match": ac_ok},
-                    "net_contents": {"match": net_ok, "optional": True},
-                    "government_warning_present": {"match": gov_ok},
-                    "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                    "brand_name": _combine_verification_results(per_image_results, "brand_name", submission),
+                    "product_class_type": _combine_verification_results(per_image_results, "product_class_type", submission),
+                    "alcohol_content": _combine_verification_results(per_image_results, "alcohol_content", submission),
+                    "net_contents": {**_combine_verification_results(per_image_results, "net_contents", submission), "optional": True},
+                    "government_warning_present": _combine_verification_results(per_image_results, "government_warning_present", submission),
                 }
+                combined["all_pass"] = all([
+                    combined["brand_name"]["match"],
+                    combined["product_class_type"]["match"],
+                    combined["alcohol_content"]["match"],
+                    combined["net_contents"]["match"],
+                    combined["government_warning_present"]["match"],
+                ])
             else:
                 expected_brand = submission.brand_name or submission.company.name
                 combined = _verify_against_prd(
@@ -677,19 +732,7 @@ class SubmissionCreateView(LoginRequiredMixin, CreateView):
                     per_image_results.append(per_ver)
                 else:
                     fields = (verification_payload.get("fields") or {})
-                    brand_ok = bool((fields.get("brand_name") or {}).get("matched"))
-                    class_ok = bool((fields.get("product_type") or {}).get("matched"))
-                    ac_ok = bool((fields.get("alcohol_content") or {}).get("matched"))
-                    net_ok = bool((fields.get("net_contents") or {}).get("matched"))
-                    gov_ok = bool((fields.get("government_warning") or {}).get("matched"))
-                    legacy = {
-                        "brand_name": {"match": brand_ok},
-                        "product_class_type": {"match": class_ok},
-                        "alcohol_content": {"match": ac_ok},
-                        "net_contents": {"match": net_ok},
-                        "government_warning_present": {"match": gov_ok},
-                        "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
-                    }
+                    legacy = _convert_verification_to_legacy(fields, self.object)
                     img.gemini_response = {"raw": response_text, "verification": legacy}
                     per_image_results.append(legacy)
                 img.save()
@@ -700,19 +743,20 @@ class SubmissionCreateView(LoginRequiredMixin, CreateView):
 
             combined = None
             if per_image_results and isinstance(per_image_results[0], dict) and "brand_name" in per_image_results[0]:
-                brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in per_image_results)
-                class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in per_image_results)
-                ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in per_image_results)
-                net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in per_image_results)
-                gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in per_image_results)
                 combined = {
-                    "brand_name": {"match": brand_ok},
-                    "product_class_type": {"match": class_ok},
-                    "alcohol_content": {"match": ac_ok},
-                    "net_contents": {"match": net_ok, "optional": True},
-                    "government_warning_present": {"match": gov_ok},
-                    "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                    "brand_name": _combine_verification_results(per_image_results, "brand_name", self.object),
+                    "product_class_type": _combine_verification_results(per_image_results, "product_class_type", self.object),
+                    "alcohol_content": _combine_verification_results(per_image_results, "alcohol_content", self.object),
+                    "net_contents": {**_combine_verification_results(per_image_results, "net_contents", self.object), "optional": True},
+                    "government_warning_present": _combine_verification_results(per_image_results, "government_warning_present", self.object),
                 }
+                combined["all_pass"] = all([
+                    combined["brand_name"]["match"],
+                    combined["product_class_type"]["match"],
+                    combined["alcohol_content"]["match"],
+                    combined["net_contents"]["match"],
+                    combined["government_warning_present"]["match"],
+                ])
             else:
                 expected_brand = self.object.brand_name or self.object.company.name
                 combined = _verify_against_prd(

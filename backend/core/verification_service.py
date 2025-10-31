@@ -13,7 +13,7 @@ class VerificationService:
                 'normalize': True
             },
             'product_type': {
-                'similarity_threshold': 80,
+                'similarity_threshold': 70,
                 'case_sensitive': False,
                 'normalize': True
             },

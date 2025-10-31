@@ -17,8 +17,8 @@ class LocationAdmin(admin.ModelAdmin):
 
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ("id", "company", "location", "status", "created_at")
-    list_filter = ("status", "company")
-    search_fields = ("id", "company__name", "location__name")
+    list_display = ("id", "company", "location", "status", "intentional_fail", "created_at")
+    list_filter = ("status", "company", "intentional_fail")
+    search_fields = ("id", "company__name", "location__name", "regulatory_citation")
 
 

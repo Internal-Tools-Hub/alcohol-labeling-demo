@@ -59,6 +59,8 @@ def create_label_prompt(item, category, is_pass=True, label_side="front"):
         f"Name and address: {bottler}, {location}",
         f"Health warning statement: {item.get('health_warning', 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.')}"
     ]
+    # Ensure the product class/type is explicitly present and exact on back labels as well
+    any_label_info.insert(0, f"Class/Type designation (must match exactly, no changes): {item['product_type']}")
     
     # Ensure exact bottler name appears verbatim on labels
     if exact_bottler_name:
@@ -66,25 +68,21 @@ def create_label_prompt(item, category, is_pass=True, label_side="front"):
     
     # Add category-specific information
     if category == "liquor":
-        any_label_info.extend([
-            f"Country of origin: {item.get('country_origin', 'USA')}",
-            f"Age statement: {item.get('age_statement', 'Aged 2 years')}",
-            f"Commodity statement: {item.get('commodity_statement', 'Distilled from corn')}"
-        ])
+        if 'distillery_location' in item and item['distillery_location']:
+            any_label_info.append(f"Distillery location: {item['distillery_location']}")
     elif category == "wine":
-        any_label_info.extend([
-            f"Vintage year: {item.get('vintage_year', '2023')}",
-            f"Appellation: {item.get('appellation', 'California')}",
-            f"Varietal: {item.get('varietal', 'Chardonnay')}"
-        ])
+        any_label_info.append("Vintage year: 2025")
+        if 'winery_location' in item and item['winery_location']:
+            any_label_info.append(f"Winery location: {item['winery_location']}")
     elif category == "beer":
-        any_label_info.extend([
-            f"Brewery: {item.get('brewery', 'Sample Brewing Co.')}",
-            f"Style: {item.get('style', 'American Lager')}"
-        ])
+        if 'brewery_location' in item and item['brewery_location']:
+            any_label_info.append(f"Brewery location: {item['brewery_location']}")
     
     if label_side == "front":
-        label_content = same_field_vision + [f"Description: {item['description']}"]
+        label_content = same_field_vision + [
+            f"Net contents: {item['net_contents']}",
+            f"Description: {item['description']}"
+        ]
         # Also require the exact bottler name on front labels
         if exact_bottler_name:
             label_content.append(f"Include this exact bottler name (verbatim, no changes): {exact_bottler_name}")
@@ -93,7 +91,11 @@ def create_label_prompt(item, category, is_pass=True, label_side="front"):
     else:
         label_content = any_label_info
         label_type = "BACK LABEL"
-        layout_notes = "Include all regulatory information, health warnings, net contents, and detailed product information. Use smaller, readable text for compliance information."
+        layout_notes = (
+            "Include all regulatory information, health warnings, net contents, and detailed product information. "
+            "Use smaller, readable text for compliance information. "
+            f"Do not invent or alter the product class/type; it must be exactly '{item['product_type']}'."
+        )
     
     base_prompt = f"""Create a flat, rectangular alcohol {label_type} design for {item['brand_name']} {item['product_type']}.
 

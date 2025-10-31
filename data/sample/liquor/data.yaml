@@ -1,6 +1,6 @@
 pass:
   - id: "liquor_pass_001"
-    brand_name: "Golden Oak Whiskey"
+    brand_name: "Golden Oak"
     product_type: "Whiskey"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -10,7 +10,7 @@ pass:
     bottler_name: "Golden Oak Distillery"
     
   - id: "liquor_pass_002"
-    brand_name: "Crystal Clear Vodka"
+    brand_name: "Crystal Clear"
     product_type: "Vodka"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -20,7 +20,7 @@ pass:
     bottler_name: "Crystal Clear Distillery"
     
   - id: "liquor_pass_003"
-    brand_name: "Sunset Rum"
+    brand_name: "Sunset"
     product_type: "Rum"
     alcohol_content: 35.0
     net_contents: "750 ml"
@@ -30,7 +30,7 @@ pass:
     bottler_name: "Sunset Distillery"
     
   - id: "liquor_pass_004"
-    brand_name: "Mountain Gin"
+    brand_name: "Mountain"
     product_type: "Gin"
     alcohol_content: 42.0
     net_contents: "750 ml"
@@ -40,7 +40,7 @@ pass:
     bottler_name: "Mountain Gin Distillery"
     
   - id: "liquor_pass_005"
-    brand_name: "Heritage Bourbon"
+    brand_name: "Heritage"
     product_type: "Bourbon"
     alcohol_content: 45.0
     net_contents: "750 ml"
@@ -50,7 +50,7 @@ pass:
     bottler_name: "Heritage Bourbon Distillery"
     
   - id: "liquor_pass_006"
-    brand_name: "Coastal Tequila"
+    brand_name: "Coastal"
     product_type: "Tequila"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -60,7 +60,7 @@ pass:
     bottler_name: "Coastal Agave Works"
     
   - id: "liquor_pass_007"
-    brand_name: "Arctic Vodka"
+    brand_name: "Arctic"
     product_type: "Vodka"
     alcohol_content: 40.0
     net_contents: "1 L"
@@ -70,7 +70,7 @@ pass:
     bottler_name: "Arctic Spirits Co."
     
   - id: "liquor_pass_008"
-    brand_name: "Royal Brandy"
+    brand_name: "Royal"
     product_type: "Brandy"
     alcohol_content: 38.0
     net_contents: "750 ml"
@@ -80,7 +80,7 @@ pass:
     bottler_name: "Royal Cellars Bottling"
     
   - id: "liquor_pass_009"
-    brand_name: "Spice Rum"
+    brand_name: "Spice"
     product_type: "Rum"
     alcohol_content: 35.0
     net_contents: "750 ml"
@@ -90,7 +90,7 @@ pass:
     bottler_name: "Spice Trade Distillers"
     
   - id: "liquor_pass_010"
-    brand_name: "Peak Scotch"
+    brand_name: "Peak"
     product_type: "Scotch"
     alcohol_content: 43.0
     net_contents: "750 ml"
@@ -101,7 +101,7 @@ pass:
 
 fail:
   - id: "liquor_fail_001"
-    brand_name: "Silent Spirit"
+    brand_name: "Silent"
     product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -119,11 +119,11 @@ fail:
     description: "Missing country of origin"
     regulatory_citation: "27 CFR 5.32(a)(2) - Country of origin required"
     failure_reason: "Missing country of origin"
-    distillery_location: "Valletta, Malta"
+    distillery_location: "Unknown Origin"
     bottler_name: "Originless Bottling House"
     
   - id: "liquor_fail_003"
-    brand_name: "Generic Liquor"
+    brand_name: "Generic"
     product_type: "Liquor"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -134,7 +134,7 @@ fail:
     bottler_name: "Plain Label Bottlers"
     
   - id: "liquor_fail_004"
-    brand_name: "Mystery Blend"
+    brand_name: "Mystery"
     product_type: "Liquor"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -145,7 +145,7 @@ fail:
     bottler_name: "Enigma Blends Co."
     
   - id: "liquor_fail_005"
-    brand_name: "Health Liquor"
+    brand_name: "Health"
     product_type: "Liquor"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -156,7 +156,7 @@ fail:
     bottler_name: "Vitality Spirits Ltd."
     
   - id: "liquor_fail_006"
-    brand_name: "Tiny Text Spirit"
+    brand_name: "Tiny Text"
     product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -167,7 +167,7 @@ fail:
     bottler_name: "Fine Print Distilling"
     
   - id: "liquor_fail_007"
-    brand_name: "Foreign Label Spirit"
+    brand_name: "Foreign Label"
     product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -178,7 +178,7 @@ fail:
     bottler_name: "Nordique Spirits Inc."
     
   - id: "liquor_fail_008"
-    brand_name: "Hidden Alcohol Spirit"
+    brand_name: "Hidden Alcohol"
     product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -189,7 +189,7 @@ fail:
     bottler_name: "Hidden Barrel Co."
     
   - id: "liquor_fail_009"
-    brand_name: "Wrong Volume Spirit"
+    brand_name: "Wrong Volume"
     product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
@@ -200,7 +200,7 @@ fail:
     bottler_name: "Exact Measure Bottling"
     
   - id: "liquor_fail_010"
-    brand_name: "No Warning Spirit"
+    brand_name: "No Warning"
     product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"

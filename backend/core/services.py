@@ -165,7 +165,15 @@ def call_gemini_with_image_bytes(image_bytes: bytes, model: str) -> Any:
     prompt = (
         "Analyze this alcohol beverage label image and return ONLY valid JSON with fields: "
         "brand_name (string), product_type (string), alcohol_content (number), net_contents (string), "
-        "government_warning_present (boolean), all_text_found (string), confidence (0-1)."
+        "government_warning_present (boolean), all_text_found (string), confidence (0-1).\n\n"
+        "IMPORTANT EXTRACTION RULES:\n"
+        "- Read literal strings from the image; do not guess or generalize.\n"
+        "- product_type must be the specific class/type printed on the label (e.g., 'Cabernet Sauvignon', 'IPA', 'Bourbon Whiskey').\n"
+        "  Do NOT return generic categories like 'Wine', 'Beer', or 'Liquor' if a specific type is present.\n"
+        "  If the provided expected product class/type string appears anywhere in the label text, set product_type exactly to that string.\n"
+        "- Brand normalization: Extract the core brand without entity/corporate suffixes or location qualifiers.\n"
+        "  Treat suffixes like 'Winery', 'Brewery', 'Distillery', 'Company', 'Co.', 'LLC', 'Inc.', 'Ltd.' as non-essential.\n"
+        "  Example: If the label shows 'Sunset Hills Winery', return brand_name='Sunset Hills'.\n"
     )
     part = genai_types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
     response = client.models.generate_content(
@@ -210,12 +218,73 @@ def local_ocr_image_to_text(image_path: str) -> str:
     """
     try:
         import pytesseract
-        from PIL import Image
+        from PIL import Image, ImageOps, ImageFilter, ImageStat
+
+        # Load image
         image = Image.open(image_path)
-        # OEM 3: Default, PSM 6: Assume a single uniform block of text
-        config = r"--oem 3 --psm 6"
-        text = pytesseract.image_to_string(image, config=config)
-        return text or ""
+
+        # Basic normalization: convert to RGB first to avoid mode issues, then to grayscale
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+        gray = ImageOps.grayscale(image)
+
+        # Resize heuristic: scale to a sensible height for Tesseract if very small
+        try:
+            width, height = gray.size
+            # Scale up small images (height < 600) to improve OCR; cap maximum size to avoid huge images
+            if height < 600:
+                scale = min(3.0, 600.0 / max(1, float(height)))
+                new_size = (int(width * scale), int(height * scale))
+                gray = gray.resize(new_size)
+            elif height > 2400:
+                # Downscale extremely large images to reduce noise and speed up OCR
+                scale = 2400.0 / float(height)
+                new_size = (int(width * scale), int(height * scale))
+                gray = gray.resize(new_size)
+        except Exception:
+            # If any resize logic fails, proceed with current image
+            pass
+
+        # Light denoise and sharpen to improve edge contrast
+        preprocessed = gray.filter(ImageFilter.MedianFilter(size=3)).filter(ImageFilter.UnsharpMask(radius=2, percent=125, threshold=3))
+
+        # Preferred language; default to English if not specified via env
+        lang = os.environ.get("TESSERACT_LANG", "eng")
+
+        # Try a sequence of PSM modes commonly effective for labels
+        # 6: uniform block of text; 4: single column variable sizes; 11: sparse text; 3: fully automatic page seg
+        psm_candidates = os.environ.get("TESSERACT_PSMS", "6,4,11,3").split(",")
+        psm_candidates = [p.strip() for p in psm_candidates if p.strip()]
+
+        collected_text = ""
+        for idx, psm in enumerate(psm_candidates):
+            config = f"--oem 3 --psm {psm} -l {lang}"
+            try:
+                text = pytesseract.image_to_string(preprocessed, config=config) or ""
+                if text.strip():
+                    if idx > 0:
+                        logger.info("local_ocr_image_to_text: non-empty result with fallback PSM=%s for '%s'", psm, image_path)
+                    return text
+            except Exception as inner_exc:
+                logger.warning("local_ocr_image_to_text: OCR attempt failed for PSM=%s on '%s': %s", psm, image_path, inner_exc)
+                continue
+
+        # If still empty, log diagnostics and return empty string
+        try:
+            w, h = preprocessed.size
+            mean_vals = ImageStat.Stat(preprocessed).mean
+            mean_pixel = int(mean_vals[0]) if mean_vals else -1
+        except Exception:
+            w, h, mean_pixel = -1, -1, -1
+        logger.info(
+            "local_ocr_image_to_text: empty OCR result after PSMs=%s for '%s' (size=%sx%s mean=%s)",
+            ",".join(psm_candidates),
+            image_path,
+            w,
+            h,
+            mean_pixel,
+        )
+        return ""
     except Exception as exc:
         logger.exception("local_ocr_image_to_text failed for '%s': %s", image_path, exc)
         return ""

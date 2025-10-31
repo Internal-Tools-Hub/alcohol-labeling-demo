@@ -91,7 +91,7 @@ class SubmissionForm(forms.ModelForm):
             "company": forms.Select(attrs={"class": BASE_INPUT_CLASSES}),
             # Optional override to company name if different
             "brand_name": forms.TextInput(attrs={"class": BASE_INPUT_CLASSES, "placeholder": "Optional: brand name override"}),
-            "product_class_type": forms.TextInput(attrs={"class": BASE_INPUT_CLASSES, "placeholder": "e.g. Beer, Wine"}),
+            "product_class_type": forms.TextInput(attrs={"class": BASE_INPUT_CLASSES, "placeholder": "e.g. Cabernet Sauvignon, IPA, Bourbon Whiskey"}),
             "alcohol_content": forms.TextInput(attrs={"class": BASE_INPUT_CLASSES, "placeholder": "e.g. 12%"}),
             "net_contents": forms.TextInput(attrs={"class": BASE_INPUT_CLASSES, "placeholder": "e.g. 750 mL"}),
         }
