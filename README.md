@@ -246,19 +246,62 @@ Application will be available at `http://localhost` (or your domain if configure
 
 ## Testing
 
-Run tests locally:
+### Running Unit Tests
 
+#### Local (without Docker)
+Run all tests:
 ```bash
 python backend/manage.py test
 ```
 
-Or with Docker:
+Run a specific test module:
+```bash
+python backend/manage.py test core.tests.test_models
+python backend/manage.py test core.tests.test_verification
+```
 
+Run a specific test class:
+```bash
+python backend/manage.py test core.tests.test_models.ModelBasicsTests
+```
+
+#### With Docker (recommended)
+Run all tests:
 ```bash
 docker compose exec app python backend/manage.py test
 ```
 
-You can also use the provided sample labels in `data/sample/` to validate OCR and verification flows.
+Run a specific test module:
+```bash
+docker compose exec app python backend/manage.py test core.tests.test_verification
+```
+
+#### Additional Test Options
+
+**Verbose output** (for more detailed test results):
+```bash
+python backend/manage.py test --verbosity=2
+```
+
+**Keep test database** (useful for debugging):
+```bash
+python backend/manage.py test --keepdb
+```
+
+**Parallel testing** (faster execution):
+```bash
+python backend/manage.py test --parallel
+```
+
+### Test Coverage
+
+The test suite includes:
+- **Model Tests** (`core.tests.test_models`): Tests for database models and basic functionality
+- **Verification Tests** (`core.tests.test_verification`): Tests for the verification service and PRD verification logic
+
+### Sample Data
+
+You can also use the provided sample labels in `data/sample/` to validate OCR and verification flows manually.
 
 ## Troubleshooting
 
