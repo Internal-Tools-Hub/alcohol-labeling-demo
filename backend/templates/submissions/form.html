@@ -16,13 +16,7 @@
             <a href="{% url 'company_create' %}" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">New Company</a>
           </div>
         </div>
-        <div class="sm:col-span-3">
-          <label class="block text-sm/6 font-medium text-gray-900">Location</label>
-          <div class="mt-2">{{ form.location }}</div>
-          <div class="mt-2">
-            <button type="button" id="new-location-btn" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">New Location</button>
-          </div>
-        </div>
+        
 
         <div class="sm:col-span-3">
           <label class="block text-sm/6 font-medium text-gray-900">Brand name (optional; overrides company name)</label>
@@ -62,74 +56,4 @@
 {% endblock %}
 
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const companySelect = document.getElementById('id_company');
-  const locationSelect = document.getElementById('id_location');
-  const newLocationBtn = document.getElementById('new-location-btn');
 
-  function setLocationOptions(options) {
-    while (locationSelect.firstChild) {
-      locationSelect.removeChild(locationSelect.firstChild);
-    }
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = options && options.length ? 'Select a location' : 'Select a company first';
-    locationSelect.appendChild(placeholder);
-    if (options) {
-      options.forEach(function(opt) {
-        const o = document.createElement('option');
-        o.value = opt.id;
-        o.textContent = opt.name;
-        locationSelect.appendChild(o);
-      });
-    }
-  }
-
-  async function fetchAndPopulateLocations(companyId) {
-    if (!companyId) {
-      setLocationOptions(null);
-      locationSelect.disabled = true;
-      return;
-    }
-    locationSelect.disabled = true;
-    try {
-      const resp = await fetch(`/api/companies/${companyId}/locations/`, {headers: {'Accept': 'application/json'}});
-      if (!resp.ok) throw new Error('Failed to load locations');
-      const data = await resp.json();
-      setLocationOptions(data.locations || []);
-    } catch (e) {
-      setLocationOptions(null);
-      console.error(e);
-    } finally {
-      locationSelect.disabled = false;
-    }
-  }
-
-  if (companySelect) {
-    companySelect.addEventListener('change', function(e) {
-      const companyId = e.target.value;
-      // Clear current selection when company changes
-      locationSelect.value = '';
-      fetchAndPopulateLocations(companyId);
-    });
-    // On initial load, if a company is pre-selected and location is empty, populate
-    if (companySelect.value && (!locationSelect.value || locationSelect.options.length <= 1)) {
-      fetchAndPopulateLocations(companySelect.value);
-    } else if (!companySelect.value) {
-      locationSelect.disabled = true;
-    }
-  }
-
-  if (newLocationBtn) {
-    newLocationBtn.addEventListener('click', function() {
-      const companyId = companySelect && companySelect.value;
-      if (!companyId) {
-        alert('Please select a company first.');
-        return;
-      }
-      window.location.href = `/companies/${companyId}/locations/create/`;
-    });
-  }
-});
-</script>

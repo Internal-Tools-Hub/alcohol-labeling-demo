@@ -1,7 +1,7 @@
 pass:
   - id: "liquor_pass_001"
     brand_name: "Golden Oak Whiskey"
-    product_type: "Liquor"
+    product_type: "Whiskey"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "Premium aged whiskey with oak notes"
@@ -11,7 +11,7 @@ pass:
     
   - id: "liquor_pass_002"
     brand_name: "Crystal Clear Vodka"
-    product_type: "Liquor"
+    product_type: "Vodka"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "Smooth premium vodka, triple distilled"
@@ -21,7 +21,7 @@ pass:
     
   - id: "liquor_pass_003"
     brand_name: "Sunset Rum"
-    product_type: "Liquor"
+    product_type: "Rum"
     alcohol_content: 35.0
     net_contents: "750 ml"
     description: "Caribbean-style rum with vanilla notes"
@@ -31,7 +31,7 @@ pass:
     
   - id: "liquor_pass_004"
     brand_name: "Mountain Gin"
-    product_type: "Liquor"
+    product_type: "Gin"
     alcohol_content: 42.0
     net_contents: "750 ml"
     description: "Botanical gin with juniper and herbs"
@@ -41,7 +41,7 @@ pass:
     
   - id: "liquor_pass_005"
     brand_name: "Heritage Bourbon"
-    product_type: "Liquor"
+    product_type: "Bourbon"
     alcohol_content: 45.0
     net_contents: "750 ml"
     description: "Kentucky straight bourbon, aged 8 years"
@@ -51,53 +51,65 @@ pass:
     
   - id: "liquor_pass_006"
     brand_name: "Coastal Tequila"
-    product_type: "Liquor"
+    product_type: "Tequila"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "100% agave tequila, silver"
     regulatory_citation: "27 CFR 5.32"
+    distillery_location: "Tequila, Jalisco, Mexico"
+    bottler_name: "Coastal Agave Works"
     
   - id: "liquor_pass_007"
     brand_name: "Arctic Vodka"
-    product_type: "Liquor"
+    product_type: "Vodka"
     alcohol_content: 40.0
     net_contents: "1 L"
     description: "Premium vodka, filtered through charcoal"
     regulatory_citation: "27 CFR 5.32"
+    distillery_location: "Reykjavik, Iceland"
+    bottler_name: "Arctic Spirits Co."
     
   - id: "liquor_pass_008"
     brand_name: "Royal Brandy"
-    product_type: "Liquor"
+    product_type: "Brandy"
     alcohol_content: 38.0
     net_contents: "750 ml"
     description: "Cognac-style brandy, aged in oak"
     regulatory_citation: "27 CFR 5.32"
+    distillery_location: "Cognac, France"
+    bottler_name: "Royal Cellars Bottling"
     
   - id: "liquor_pass_009"
     brand_name: "Spice Rum"
-    product_type: "Liquor"
+    product_type: "Rum"
     alcohol_content: 35.0
     net_contents: "750 ml"
     description: "Spiced rum with cinnamon and vanilla"
     regulatory_citation: "27 CFR 5.32"
+    distillery_location: "Bridgetown, Barbados"
+    bottler_name: "Spice Trade Distillers"
     
   - id: "liquor_pass_010"
     brand_name: "Peak Scotch"
-    product_type: "Liquor"
+    product_type: "Scotch"
     alcohol_content: 43.0
     net_contents: "750 ml"
     description: "Single malt scotch whisky, 12 years"
     regulatory_citation: "27 CFR 5.32"
+    distillery_location: "Speyside, Scotland"
+    bottler_name: "Peak Highlands Distillery"
 
 fail:
   - id: "liquor_fail_001"
     brand_name: "Silent Spirit"
-    product_type: "Liquor"
+    product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "Missing alcohol content statement"
     regulatory_citation: "27 CFR 5.32(a)(1) - Alcohol content must be stated"
     failure_reason: "Missing alcohol content statement"
+    distillery_location: "Savannah, Georgia"
+    bottler_name: "Silent Spirit Co."
     
   - id: "liquor_fail_002"
     brand_name: "Unknown Origin"
@@ -107,6 +119,8 @@ fail:
     description: "Missing country of origin"
     regulatory_citation: "27 CFR 5.32(a)(2) - Country of origin required"
     failure_reason: "Missing country of origin"
+    distillery_location: "Valletta, Malta"
+    bottler_name: "Originless Bottling House"
     
   - id: "liquor_fail_003"
     brand_name: "Generic Liquor"
@@ -116,6 +130,8 @@ fail:
     description: "Missing class and type designation"
     regulatory_citation: "27 CFR 5.32(a)(3) - Class and type required"
     failure_reason: "Missing class and type designation"
+    distillery_location: "Topeka, Kansas"
+    bottler_name: "Plain Label Bottlers"
     
   - id: "liquor_fail_004"
     brand_name: "Mystery Blend"
@@ -125,6 +141,8 @@ fail:
     description: "Missing age statement when required"
     regulatory_citation: "27 CFR 5.32(a)(4) - Age statement required"
     failure_reason: "Missing age statement"
+    distillery_location: "Santa Fe, New Mexico"
+    bottler_name: "Enigma Blends Co."
     
   - id: "liquor_fail_005"
     brand_name: "Health Liquor"
@@ -134,48 +152,60 @@ fail:
     description: "Contains prohibited health claims"
     regulatory_citation: "27 CFR 5.32(b) - Prohibited statements"
     failure_reason: "Contains prohibited health claims"
+    distillery_location: "Boulder, Colorado"
+    bottler_name: "Vitality Spirits Ltd."
     
   - id: "liquor_fail_006"
     brand_name: "Tiny Text Spirit"
-    product_type: "Liquor"
+    product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "Text size below minimum requirements"
     regulatory_citation: "27 CFR 5.32(c) - Minimum type size"
     failure_reason: "Text size below minimum requirements"
+    distillery_location: "Providence, Rhode Island"
+    bottler_name: "Fine Print Distilling"
     
   - id: "liquor_fail_007"
     brand_name: "Foreign Label Spirit"
-    product_type: "Liquor"
+    product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "Label not in English"
     regulatory_citation: "27 CFR 5.32(d) - English language requirement"
     failure_reason: "Label not in English"
+    distillery_location: "Montreal, Quebec"
+    bottler_name: "Nordique Spirits Inc."
     
   - id: "liquor_fail_008"
     brand_name: "Hidden Alcohol Spirit"
-    product_type: "Liquor"
+    product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "Alcohol content not clearly visible"
     regulatory_citation: "27 CFR 5.32(a)(1) - Alcohol content visibility"
     failure_reason: "Alcohol content not clearly visible"
+    distillery_location: "Kansas City, Missouri"
+    bottler_name: "Hidden Barrel Co."
     
   - id: "liquor_fail_009"
     brand_name: "Wrong Volume Spirit"
-    product_type: "Liquor"
+    product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "Net contents declaration inaccurate"
     regulatory_citation: "27 CFR 5.32(a)(5) - Accurate net contents"
     failure_reason: "Net contents declaration inaccurate"
+    distillery_location: "Cincinnati, Ohio"
+    bottler_name: "Exact Measure Bottling"
     
   - id: "liquor_fail_010"
     brand_name: "No Warning Spirit"
-    product_type: "Liquor"
+    product_type: "Spirit"
     alcohol_content: 40.0
     net_contents: "750 ml"
     description: "Missing government warning"
     regulatory_citation: "27 CFR 5.32(e) - Government warning required"
     failure_reason: "Missing government warning statement"
+    distillery_location: "Tampa, Florida"
+    bottler_name: "Clear Notice Spirits"

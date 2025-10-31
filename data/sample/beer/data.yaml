@@ -1,7 +1,7 @@
 pass:
   - id: "beer_pass_001"
     brand_name: "Golden Valley Brewing"
-    product_type: "Beer"
+    product_type: "Lager"
     alcohol_content: 5.2
     net_contents: "12 fl oz (355 ml)"
     description: "Classic American lager with crisp taste and golden color"
@@ -11,7 +11,7 @@ pass:
     
   - id: "beer_pass_002"
     brand_name: "Mountain Peak IPA"
-    product_type: "Beer"
+    product_type: "IPA"
     alcohol_content: 6.8
     net_contents: "16 fl oz (473 ml)"
     description: "Hoppy India Pale Ale with citrus notes"
@@ -21,7 +21,7 @@ pass:
     
   - id: "beer_pass_003"
     brand_name: "Riverside Pilsner"
-    product_type: "Beer"
+    product_type: "Pilsner"
     alcohol_content: 4.9
     net_contents: "12 fl oz (355 ml)"
     description: "Traditional Czech-style pilsner"
@@ -31,7 +31,7 @@ pass:
     
   - id: "beer_pass_004"
     brand_name: "Sunset Wheat"
-    product_type: "Beer"
+    product_type: "Wheat"
     alcohol_content: 5.5
     net_contents: "12 fl oz (355 ml)"
     description: "Smooth wheat beer with hints of orange"
@@ -41,7 +41,7 @@ pass:
     
   - id: "beer_pass_005"
     brand_name: "Thunder Stout"
-    product_type: "Beer"
+    product_type: "Stout"
     alcohol_content: 7.1
     net_contents: "16 fl oz (473 ml)"
     description: "Rich, dark stout with coffee and chocolate notes"
@@ -51,7 +51,7 @@ pass:
     
   - id: "beer_pass_006"
     brand_name: "Crystal Light Lager"
-    product_type: "Beer"
+    product_type: "Lager"
     alcohol_content: 4.2
     net_contents: "12 fl oz (355 ml)"
     description: "Light and refreshing lager with clean finish"
@@ -61,7 +61,7 @@ pass:
     
   - id: "beer_pass_007"
     brand_name: "Forest Porter"
-    product_type: "Beer"
+    product_type: "Porter"
     alcohol_content: 6.3
     net_contents: "16 fl oz (473 ml)"
     description: "Robust porter with smoky undertones"
@@ -71,7 +71,7 @@ pass:
     
   - id: "beer_pass_008"
     brand_name: "Coastal Blonde"
-    product_type: "Beer"
+    product_type: "Blonde Ale"
     alcohol_content: 4.8
     net_contents: "12 fl oz (355 ml)"
     description: "Easy-drinking blonde ale perfect for summer"
@@ -81,7 +81,7 @@ pass:
     
   - id: "beer_pass_009"
     brand_name: "Urban Sour"
-    product_type: "Beer"
+    product_type: "Sour Ale"
     alcohol_content: 5.7
     net_contents: "12 fl oz (355 ml)"
     description: "Tart sour ale with berry flavors"
@@ -91,7 +91,7 @@ pass:
     
   - id: "beer_pass_010"
     brand_name: "Heritage Bock"
-    product_type: "Beer"
+    product_type: "Bock"
     alcohol_content: 6.9
     net_contents: "16 fl oz (473 ml)"
     description: "Traditional German bock with malty sweetness"
@@ -113,7 +113,7 @@ fail:
     
   - id: "beer_fail_002"
     brand_name: "Mystery Lager"
-    product_type: "Beer"
+    product_type: "Lager"
     alcohol_content: 4.8
     net_contents: "12 fl oz (355 ml)"
     description: "Missing net contents declaration"
@@ -146,7 +146,7 @@ fail:
     
   - id: "beer_fail_005"
     brand_name: "Confusing Ale"
-    product_type: "Beer"
+    product_type: "Ale"
     alcohol_content: 5.8
     net_contents: "12 fl oz (355 ml)"
     description: "Misleading health claims on label"
@@ -168,7 +168,7 @@ fail:
     
   - id: "beer_fail_007"
     brand_name: "Foreign Lager"
-    product_type: "Beer"
+    product_type: "Lager"
     alcohol_content: 5.1
     net_contents: "12 fl oz (355 ml)"
     description: "Missing English language requirement"

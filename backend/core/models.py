@@ -47,11 +47,13 @@ class Submission(TimestampedModel):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     company = models.ForeignKey(Company, on_delete=models.PROTECT)
-    location = models.ForeignKey(Location, on_delete=models.PROTECT)
+    location = models.ForeignKey(Location, on_delete=models.PROTECT, null=True, blank=True)
     # Deprecated single file; multi-image stored in SubmissionImage
     gcs_uri = models.CharField(max_length=512, blank=True)
     gemini_model = models.CharField(max_length=128, default="gemini-2.5-flash")
     gemini_response = models.JSONField(blank=True, null=True)
+    # Aggregated OCR extracts for the submission (both Gemini-parsed and local OCR text)
+    ocr_extract = models.JSONField(blank=True, null=True)
     # PRD fields (user-entered expected values)
     # brand_name is optional and serves as an override to the company name if different
     brand_name = models.CharField(max_length=255, blank=True)
@@ -64,7 +66,9 @@ class Submission(TimestampedModel):
     error_message = models.TextField(blank=True)
 
     def __str__(self) -> str:
-        return f"Submission {self.pk} - {self.company.name} - {self.location.name}"
+        loc = getattr(self, "location", None)
+        loc_str = loc.name if loc else "No location"
+        return f"Submission {self.pk} - {self.company.name} - {loc_str}"
 
 
 class SubmissionImage(TimestampedModel):
@@ -75,5 +79,14 @@ class SubmissionImage(TimestampedModel):
 
     def __str__(self) -> str:
         return f"SubmissionImage {self.pk} for submission {self.submission_id}"
+
+
+class Comment(TimestampedModel):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    text = models.TextField()
+
+    def __str__(self) -> str:
+        return f"Comment {self.pk} on submission {self.submission_id} by {self.user}"
 
 

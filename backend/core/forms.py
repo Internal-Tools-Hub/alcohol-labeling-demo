@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Company, Location, Submission
+from .models import Company, Location, Submission, Comment
 
 # Shared Tailwind input classes for consistent styling across forms
 BASE_INPUT_CLASSES = (
@@ -82,7 +82,6 @@ class SubmissionForm(forms.ModelForm):
         model = Submission
         fields = [
             "company",
-            "location",
             "brand_name",
             "product_class_type",
             "alcohol_content",
@@ -90,7 +89,6 @@ class SubmissionForm(forms.ModelForm):
         ]
         widgets = {
             "company": forms.Select(attrs={"class": BASE_INPUT_CLASSES}),
-            "location": forms.Select(attrs={"class": BASE_INPUT_CLASSES}),
             # Optional override to company name if different
             "brand_name": forms.TextInput(attrs={"class": BASE_INPUT_CLASSES, "placeholder": "Optional: brand name override"}),
             "product_class_type": forms.TextInput(attrs={"class": BASE_INPUT_CLASSES, "placeholder": "e.g. Beer, Wine"}),
@@ -102,21 +100,16 @@ class SubmissionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Make brand_name optional in the form as it overrides company name when provided
         self.fields["brand_name"].required = False
-        # Default: no locations until a company is selected
-        from .models import Location
-        self.fields["location"].queryset = Location.objects.none()
-        # When editing or when company provided in data, filter locations
-        company_field_value = None
-        if self.data.get("company"):
-            company_field_value = self.data.get("company")
-        elif getattr(self.instance, "company_id", None):
-            company_field_value = self.instance.company_id
-        if company_field_value:
-            try:
-                self.fields["location"].queryset = Location.objects.filter(company_id=int(company_field_value)).order_by("name")
-            except (ValueError, TypeError):
-                self.fields["location"].queryset = Location.objects.none()
 
+
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ["text"]
+        widgets = {
+            "text": forms.Textarea(attrs={"class": BASE_INPUT_CLASSES, "rows": 3, "placeholder": "Add a comment..."}),
+        }
 
 
 class TailwindAuthenticationForm(AuthenticationForm):

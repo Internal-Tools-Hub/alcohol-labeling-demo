@@ -1,7 +1,7 @@
 pass:
   - id: "wine_pass_001"
     brand_name: "Vineyard Estate Chardonnay"
-    product_type: "Wine"
+    product_type: "Chardonnay"
     alcohol_content: 13.5
     net_contents: "750 ml"
     description: "Elegant white wine with oak aging"
@@ -11,7 +11,7 @@ pass:
     
   - id: "wine_pass_002"
     brand_name: "Sunset Hills Cabernet"
-    product_type: "Wine"
+    product_type: "Cabernet Sauvignon"
     alcohol_content: 14.2
     net_contents: "750 ml"
     description: "Full-bodied red wine with berry notes"
@@ -21,7 +21,7 @@ pass:
     
   - id: "wine_pass_003"
     brand_name: "Coastal Pinot Noir"
-    product_type: "Wine"
+    product_type: "Pinot Noir"
     alcohol_content: 13.8
     net_contents: "750 ml"
     description: "Smooth red wine with earthy undertones"
@@ -31,7 +31,7 @@ pass:
     
   - id: "wine_pass_004"
     brand_name: "Garden Rose"
-    product_type: "Wine"
+    product_type: "Rose"
     alcohol_content: 12.9
     net_contents: "750 ml"
     description: "Light and fruity rose wine"
@@ -41,7 +41,7 @@ pass:
     
   - id: "wine_pass_005"
     brand_name: "Mountain View Merlot"
-    product_type: "Wine"
+    product_type: "Merlot"
     alcohol_content: 14.0
     net_contents: "750 ml"
     description: "Rich merlot with plum flavors"
@@ -51,7 +51,7 @@ pass:
     
   - id: "wine_pass_006"
     brand_name: "Valley Riesling"
-    product_type: "Wine"
+    product_type: "Riesling"
     alcohol_content: 11.5
     net_contents: "750 ml"
     description: "Crisp white wine with mineral notes"
@@ -61,7 +61,7 @@ pass:
     
   - id: "wine_pass_007"
     brand_name: "Heritage Syrah"
-    product_type: "Wine"
+    product_type: "Syrah"
     alcohol_content: 14.5
     net_contents: "750 ml"
     description: "Bold red wine with spice characteristics"
@@ -71,7 +71,7 @@ pass:
     
   - id: "wine_pass_008"
     brand_name: "Spring Sauvignon Blanc"
-    product_type: "Wine"
+    product_type: "Sauvignon Blanc"
     alcohol_content: 12.8
     net_contents: "750 ml"
     description: "Fresh white wine with citrus aromas"
@@ -81,7 +81,7 @@ pass:
     
   - id: "wine_pass_009"
     brand_name: "Estate Reserve"
-    product_type: "Wine"
+    product_type: "Blend"
     alcohol_content: 15.1
     net_contents: "750 ml"
     description: "Premium blend with complex flavors"
@@ -91,7 +91,7 @@ pass:
     
   - id: "wine_pass_010"
     brand_name: "Dessert Port"
-    product_type: "Wine"
+    product_type: "Port"
     alcohol_content: 18.0
     net_contents: "375 ml"
     description: "Sweet fortified wine for dessert"
@@ -120,7 +120,7 @@ fail:
     
   - id: "wine_fail_003"
     brand_name: "Generic Red"
-    product_type: "Wine"
+    product_type: "Red Wine"
     alcohol_content: 13.8
     net_contents: "750 ml"
     description: "Missing appellation of origin"
@@ -129,7 +129,7 @@ fail:
     
   - id: "wine_fail_004"
     brand_name: "Mystery Blend"
-    product_type: "Wine"
+    product_type: "Blend"
     alcohol_content: 14.5
     net_contents: "750 ml"
     description: "Missing varietal designation"

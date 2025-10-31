@@ -1,15 +1,19 @@
 import os
 import logging
 from django.contrib import messages
+import json
+import sys
+import os
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.http import JsonResponse
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView, View
 
-from .forms import CompanyForm, LocationForm, SubmissionForm
-from .models import Company, Location, Submission, SubmissionImage
-from .services import upload_file_to_gcs, call_gemini_with_image_bytes, generate_signed_url
+from .forms import CompanyForm, LocationForm, SubmissionForm, CommentForm
+from .models import Company, Location, Submission, SubmissionImage, Comment
+from .services import upload_file_to_gcs, call_gemini_with_image_bytes, generate_signed_url, local_ocr_image_to_text
+from .verification_service import verification_service
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +44,8 @@ class HomeView(LoginRequiredMixin, TemplateView):
                     messages.error(request, "Please add at least one image.")
                     return self.render_to_response({"form": form, "recent_submissions": Submission.objects.order_by("-created_at")[:10]})
                 per_image_results = []
+                ocr_image_results = []
+                per_image_ocr_texts = []
                 combined_text = ""
                 for f in [front, back]:
                     if not f:
@@ -53,31 +59,153 @@ class HomeView(LoginRequiredMixin, TemplateView):
                     with open(local_path, "rb") as fh:
                         image_bytes = fh.read()
                     response_text = call_gemini_with_image_bytes(image_bytes, submission.gemini_model)
-                    # Per-image verification against PRD
+
+                    # Use richer verification when available
+                    verification_payload = None
+                    if verification_service is not None:
+                        extracted = {}
+                        try:
+                            extracted = json.loads(response_text or "{}") if isinstance(response_text, str) else (response_text or {})
+                        except Exception:
+                            extracted = {}
+
+                        # Normalize extracted keys/values for verification service
+                        if isinstance(extracted, dict):
+                            if "product_class" in extracted and "product_type" not in extracted:
+                                extracted["product_type"] = extracted.get("product_class")
+                            # Ensure alcohol_content is numeric if given as string with %
+                            ac_val = extracted.get("alcohol_content")
+                            if isinstance(ac_val, str):
+                                try:
+                                    extracted["alcohol_content"] = float(ac_val.replace("%", "").strip())
+                                except Exception:
+                                    pass
+                            # Provide text fallback for gov-warning search
+                            if not extracted.get("all_text_found") and isinstance(response_text, str):
+                                extracted["all_text_found"] = response_text
+
+                        form_data = {
+                            "brand_name": submission.brand_name or submission.company.name,
+                            "product_type": submission.product_class_type,
+                            "alcohol_content": submission.alcohol_content,
+                            "net_contents": submission.net_contents,
+                        }
+                        try:
+                            fields_result = verification_service.compare_fields(form_data, extracted)
+                            status, overall_conf = verification_service.get_overall_status(fields_result)
+                            verification_payload = {
+                                "fields": fields_result,
+                                "overall": {"status": status, "confidence": overall_conf},
+                            }
+                        except Exception:
+                            verification_payload = None
+
+                    if verification_payload is None:
+                        # Fallback to simple PRD verification
+                        expected_brand = submission.brand_name or submission.company.name
+                        per_ver = _verify_against_prd(
+                            response_text or "",
+                            brand_name=expected_brand,
+                            product_class_type=submission.product_class_type,
+                            alcohol_content=submission.alcohol_content,
+                            net_contents=submission.net_contents,
+                        )
+                        img.gemini_response = {"raw": response_text, "verification": per_ver}
+                        per_image_results.append(per_ver)
+                    else:
+                        fields = verification_payload.get("fields") or {}
+                        brand_ok = bool((fields.get("brand_name") or {}).get("matched"))
+                        class_ok = bool((fields.get("product_type") or {}).get("matched"))
+                        ac_ok = bool((fields.get("alcohol_content") or {}).get("matched"))
+                        net_ok = bool((fields.get("net_contents") or {}).get("matched"))
+                        gov_ok = bool((fields.get("government_warning") or {}).get("matched"))
+                        legacy = {
+                            "brand_name": {"match": brand_ok},
+                            "product_class_type": {"match": class_ok},
+                            "alcohol_content": {"match": ac_ok},
+                            "net_contents": {"match": net_ok},
+                            "government_warning_present": {"match": gov_ok},
+                            "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                        }
+                        img.gemini_response = {"raw": response_text, "verification": legacy}
+                        per_image_results.append(legacy)
+                    img.save()
+                    try:
+                        combined_text += "\n" + (response_text if isinstance(response_text, str) else json.dumps(response_text))
+                    except Exception:
+                        combined_text += "\n"
+
+                    # Local OCR verification (presence-based using raw OCR text)
+                    ocr_text = local_ocr_image_to_text(local_path)
+                    ocr_ver = _verify_against_prd(
+                        ocr_text or "",
+                        brand_name=submission.brand_name or submission.company.name,
+                        product_class_type=submission.product_class_type,
+                        alcohol_content=submission.alcohol_content,
+                        net_contents=submission.net_contents,
+                    )
+                    # Store alongside Gemini verification for the image
+                    img_resp = img.gemini_response or {}
+                    img_resp["ocr_verification"] = ocr_ver
+                    img.gemini_response = img_resp
+                    img.save(update_fields=["gemini_response"])
+                    ocr_image_results.append(ocr_ver)
+                    per_image_ocr_texts.append({"image_id": img.id, "text": ocr_text or ""})
+
+                # Combined verification: aggregate per-image results
+                combined = None
+                if per_image_results and isinstance(per_image_results[0], dict) and "brand_name" in per_image_results[0]:
+                    brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in per_image_results)
+                    class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in per_image_results)
+                    ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in per_image_results)
+                    net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in per_image_results)
+                    gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in per_image_results)
+                    combined = {
+                        "brand_name": {"match": brand_ok},
+                        "product_class_type": {"match": class_ok},
+                        "alcohol_content": {"match": ac_ok},
+                        "net_contents": {"match": net_ok, "optional": True},
+                        "government_warning_present": {"match": gov_ok},
+                        "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                    }
+                else:
+                    # Fallback to simple PRD verification
                     expected_brand = submission.brand_name or submission.company.name
-                    per_ver = _verify_against_prd(
-                        response_text or "",
+                    combined = _verify_against_prd(
+                        combined_text,
                         brand_name=expected_brand,
                         product_class_type=submission.product_class_type,
                         alcohol_content=submission.alcohol_content,
                         net_contents=submission.net_contents,
                     )
-                    img.gemini_response = {"raw": response_text, "verification": per_ver}
-                    img.save()
-                    per_image_results.append(per_ver)
-                    combined_text += "\n" + (response_text or "")
-
-                # Verification per PRD + distilled spirits checklist highlights
-                expected_brand = submission.brand_name or submission.company.name
-                combined = _verify_against_prd(
-                    combined_text,
-                    brand_name=expected_brand,
-                    product_class_type=submission.product_class_type,
-                    alcohol_content=submission.alcohol_content,
-                    net_contents=submission.net_contents,
-                )
+                # Build combined OCR verification (legacy shape) across images
+                combined_ocr = None
+                if ocr_image_results:
+                    brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in ocr_image_results)
+                    class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in ocr_image_results)
+                    ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in ocr_image_results)
+                    net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in ocr_image_results)
+                    gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in ocr_image_results)
+                    combined_ocr = {
+                        "brand_name": {"match": brand_ok},
+                        "product_class_type": {"match": class_ok},
+                        "alcohol_content": {"match": ac_ok},
+                        "net_contents": {"match": net_ok, "optional": True},
+                        "government_warning_present": {"match": gov_ok},
+                        "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                    }
                 submission.gemini_response = {"images": per_image_results}
                 submission.verification_result = combined
+                # Attach OCR summary alongside for display
+                gr = submission.gemini_response or {}
+                gr["ocr_images"] = ocr_image_results
+                gr["ocr_overall"] = combined_ocr
+                submission.gemini_response = gr
+                # Persist full OCR extract for the submission
+                submission.ocr_extract = {
+                    "gemini": {"combined_text": combined_text.strip()},
+                    "local_ocr": {"images": per_image_ocr_texts},
+                }
                 submission.status = Submission.STATUS_PROCESSED
                 submission.save()
                 messages.success(request, "Submission processed successfully.")
@@ -127,8 +255,12 @@ class SubmissionDetailView(LoginRequiredMixin, DetailView):
                 "gcs_uri": img.gcs_uri,
                 "signed_url": signed_url,
                 "verification": (img.gemini_response or {}).get("verification") if getattr(img, "gemini_response", None) else None,
+                "ocr_verification": (img.gemini_response or {}).get("ocr_verification") if getattr(img, "gemini_response", None) else None,
             })
         context["images_with_urls"] = images_with_urls
+        # Add comments and comment form
+        context["comments"] = submission.comments.all().order_by("-created_at")
+        context["comment_form"] = CommentForm()
         return context
 
 
@@ -140,6 +272,8 @@ class SubmissionReanalyzeView(LoginRequiredMixin, View):
             submission.save(update_fields=["status"])
 
             per_image_results = []
+            ocr_image_results = []
+            per_image_ocr_texts = []
             combined_text = ""
             # Re-run Gemini on each stored image
             for img in submission.images.all().order_by("id"):
@@ -150,34 +284,306 @@ class SubmissionReanalyzeView(LoginRequiredMixin, View):
                 with open(local_path, "rb") as fh:
                     image_bytes = fh.read()
                 response_text = call_gemini_with_image_bytes(image_bytes, submission.gemini_model)
+                verification_payload = None
+                if verification_service is not None:
+                    extracted = {}
+                    try:
+                        extracted = json.loads(response_text or "{}") if isinstance(response_text, str) else (response_text or {})
+                    except Exception:
+                        extracted = {}
+                
+                # Normalize extracted keys/values for verification service
+                if isinstance(extracted, dict):
+                    if "product_class" in extracted and "product_type" not in extracted:
+                        extracted["product_type"] = extracted.get("product_class")
+                    ac_val = extracted.get("alcohol_content")
+                    if isinstance(ac_val, str):
+                        try:
+                            extracted["alcohol_content"] = float(ac_val.replace("%", "").strip())
+                        except Exception:
+                            pass
+                    if not extracted.get("all_text_found") and isinstance(response_text, str):
+                        extracted["all_text_found"] = response_text
+                    form_data = {
+                        "brand_name": submission.brand_name or submission.company.name,
+                        "product_type": submission.product_class_type,
+                        "alcohol_content": submission.alcohol_content,
+                        "net_contents": submission.net_contents,
+                    }
+                    try:
+                        fields_result = verification_service.compare_fields(form_data, extracted)
+                        status, overall_conf = verification_service.get_overall_status(fields_result)
+                        verification_payload = {"fields": fields_result, "overall": {"status": status, "confidence": overall_conf}}
+                    except Exception:
+                        verification_payload = None
+
+                if verification_payload is None:
+                    expected_brand = submission.brand_name or submission.company.name
+                    per_ver = _verify_against_prd(
+                        response_text or "",
+                        brand_name=expected_brand,
+                        product_class_type=submission.product_class_type,
+                        alcohol_content=submission.alcohol_content,
+                        net_contents=submission.net_contents,
+                    )
+                    img.gemini_response = {"raw": response_text, "verification": per_ver}
+                    per_image_results.append(per_ver)
+                else:
+                    fields = (verification_payload.get("fields") or {})
+                    brand_ok = bool((fields.get("brand_name") or {}).get("matched"))
+                    class_ok = bool((fields.get("product_type") or {}).get("matched"))
+                    ac_ok = bool((fields.get("alcohol_content") or {}).get("matched"))
+                    net_ok = bool((fields.get("net_contents") or {}).get("matched"))
+                    gov_ok = bool((fields.get("government_warning") or {}).get("matched"))
+                    legacy = {
+                        "brand_name": {"match": brand_ok},
+                        "product_class_type": {"match": class_ok},
+                        "alcohol_content": {"match": ac_ok},
+                        "net_contents": {"match": net_ok},
+                        "government_warning_present": {"match": gov_ok},
+                        "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                    }
+                    img.gemini_response = {"raw": response_text, "verification": legacy}
+                    per_image_results.append(legacy)
+                # Local OCR per image
+                ocr_text = local_ocr_image_to_text(local_path)
+                ocr_ver = _verify_against_prd(
+                    ocr_text or "",
+                    brand_name=submission.brand_name or submission.company.name,
+                    product_class_type=submission.product_class_type,
+                    alcohol_content=submission.alcohol_content,
+                    net_contents=submission.net_contents,
+                )
+                img_resp = img.gemini_response or {}
+                img_resp["ocr_verification"] = ocr_ver
+                img.gemini_response = img_resp
+                img.save(update_fields=["gemini_response"])
+                ocr_image_results.append(ocr_ver)
+                per_image_ocr_texts.append({"image_id": img.id, "text": ocr_text or ""})
+                try:
+                    combined_text += "\n" + (response_text if isinstance(response_text, str) else json.dumps(response_text))
+                except Exception:
+                    combined_text += "\n"
+
+            combined = None
+            if per_image_results and isinstance(per_image_results[0], dict) and "brand_name" in per_image_results[0]:
+                brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in per_image_results)
+                class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in per_image_results)
+                ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in per_image_results)
+                net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in per_image_results)
+                gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in per_image_results)
+                combined = {
+                    "brand_name": {"match": brand_ok},
+                    "product_class_type": {"match": class_ok},
+                    "alcohol_content": {"match": ac_ok},
+                    "net_contents": {"match": net_ok, "optional": True},
+                    "government_warning_present": {"match": gov_ok},
+                    "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                }
+            else:
                 expected_brand = submission.brand_name or submission.company.name
-                per_ver = _verify_against_prd(
+                combined = _verify_against_prd(
+                    combined_text,
+                    brand_name=expected_brand,
+                    product_class_type=submission.product_class_type,
+                    alcohol_content=submission.alcohol_content,
+                    net_contents=submission.net_contents,
+                )
+            # Build OCR combined
+            combined_ocr = None
+            if ocr_image_results:
+                brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in ocr_image_results)
+                class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in ocr_image_results)
+                ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in ocr_image_results)
+                net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in ocr_image_results)
+                gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in ocr_image_results)
+                combined_ocr = {
+                    "brand_name": {"match": brand_ok},
+                    "product_class_type": {"match": class_ok},
+                    "alcohol_content": {"match": ac_ok},
+                    "net_contents": {"match": net_ok, "optional": True},
+                    "government_warning_present": {"match": gov_ok},
+                    "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                }
+
+            submission.gemini_response = {"images": per_image_results, "ocr_images": ocr_image_results, "ocr_overall": combined_ocr}
+            submission.verification_result = combined
+            submission.ocr_extract = {
+                "gemini": {"combined_text": combined_text.strip()},
+                "local_ocr": {"images": per_image_ocr_texts},
+            }
+            submission.status = Submission.STATUS_PROCESSED
+            submission.save(update_fields=["gemini_response", "verification_result", "status"])
+            messages.success(request, "Re-analysis complete.")
+        except Exception as exc:
+            logger.exception("SubmissionReanalyzeView: failed re-analysis: %s", exc)
+            submission.status = Submission.STATUS_FAILED
+            submission.error_message = str(exc)
+            submission.save(update_fields=["status", "error_message"])
+            messages.error(request, f"Re-analysis failed: {exc}")
+        return redirect("submission_detail", pk=submission.pk)
+
+
+class SubmissionCommentCreateView(LoginRequiredMixin, View):
+    def post(self, request, pk: int):
+        submission: Submission = get_object_or_404(Submission, pk=pk)
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment: Comment = form.save(commit=False)
+            comment.submission = submission
+            comment.user = request.user
+            comment.save()
+            messages.success(request, "Comment added successfully.")
+        else:
+            messages.error(request, "Please correct the errors in your comment.")
+        return redirect("submission_detail", pk=submission.pk)
+
+
+class SubmissionImageReanalyzeView(LoginRequiredMixin, View):
+    def post(self, request, pk: int, image_id: int):
+        submission: Submission = get_object_or_404(Submission, pk=pk)
+        img: SubmissionImage = get_object_or_404(SubmissionImage, pk=image_id, submission=submission)
+        try:
+            # Re-run Gemini for this image
+            local_path = getattr(img.image, "path", None)
+            if not local_path or not os.path.exists(local_path):
+                messages.error(request, "Image file missing on disk.")
+                return redirect("submission_detail", pk=submission.pk)
+            with open(local_path, "rb") as fh:
+                image_bytes = fh.read()
+            response_text = call_gemini_with_image_bytes(image_bytes, submission.gemini_model)
+
+            # Normalize extraction
+            verification_payload = None
+            extracted = {}
+            try:
+                extracted = json.loads(response_text or "{}") if isinstance(response_text, str) else (response_text or {})
+            except Exception:
+                extracted = {}
+            if isinstance(extracted, dict):
+                if "product_class" in extracted and "product_type" not in extracted:
+                    extracted["product_type"] = extracted.get("product_class")
+                ac_val = extracted.get("alcohol_content")
+                if isinstance(ac_val, str):
+                    try:
+                        extracted["alcohol_content"] = float(ac_val.replace("%", "").strip())
+                    except Exception:
+                        pass
+                if not extracted.get("all_text_found") and isinstance(response_text, str):
+                    extracted["all_text_found"] = response_text
+
+            form_data = {
+                "brand_name": submission.brand_name or submission.company.name,
+                "product_type": submission.product_class_type,
+                "alcohol_content": submission.alcohol_content,
+                "net_contents": submission.net_contents,
+            }
+            try:
+                fields_result = verification_service.compare_fields(form_data, extracted)
+                status, overall_conf = verification_service.get_overall_status(fields_result)
+                verification_payload = {"fields": fields_result, "overall": {"status": status, "confidence": overall_conf}}
+            except Exception:
+                verification_payload = None
+
+            # Map to legacy shape for per-image storage
+            if verification_payload is None:
+                expected_brand = submission.brand_name or submission.company.name
+                legacy = _verify_against_prd(
                     response_text or "",
                     brand_name=expected_brand,
                     product_class_type=submission.product_class_type,
                     alcohol_content=submission.alcohol_content,
                     net_contents=submission.net_contents,
                 )
-                img.gemini_response = {"raw": response_text, "verification": per_ver}
-                img.save(update_fields=["gemini_response"])
-                per_image_results.append(per_ver)
-                combined_text += "\n" + (response_text or "")
+            else:
+                fields = (verification_payload.get("fields") or {})
+                legacy = {
+                    "brand_name": {"match": bool((fields.get("brand_name") or {}).get("matched"))},
+                    "product_class_type": {"match": bool((fields.get("product_type") or {}).get("matched"))},
+                    "alcohol_content": {"match": bool((fields.get("alcohol_content") or {}).get("matched"))},
+                    "net_contents": {"match": bool((fields.get("net_contents") or {}).get("matched"))},
+                    "government_warning_present": {"match": bool((fields.get("government_warning") or {}).get("matched"))},
+                }
+                legacy["all_pass"] = all(v.get("match") for v in [legacy["brand_name"], legacy["product_class_type"], legacy["alcohol_content"], legacy["net_contents"], legacy["government_warning_present"]])
 
-            expected_brand = submission.brand_name or submission.company.name
-            combined = _verify_against_prd(
-                combined_text,
-                brand_name=expected_brand,
+            # Save per-image result
+            img.gemini_response = {"raw": response_text, "verification": legacy}
+            # Local OCR on this image
+            ocr_text = local_ocr_image_to_text(local_path)
+            ocr_ver = _verify_against_prd(
+                ocr_text or "",
+                brand_name=submission.brand_name or submission.company.name,
                 product_class_type=submission.product_class_type,
                 alcohol_content=submission.alcohol_content,
                 net_contents=submission.net_contents,
             )
-            submission.gemini_response = {"images": per_image_results}
+            img.gemini_response["ocr_verification"] = ocr_ver
+            img.save(update_fields=["gemini_response"])
+
+            # Recompute combined across all images
+            per_image_results = []
+            ocr_image_results = []
+            combined_text = ""
+            for im in submission.images.all().order_by("id"):
+                vr = (im.gemini_response or {}).get("verification")
+                if vr:
+                    per_image_results.append(vr)
+                ocr_vr = (im.gemini_response or {}).get("ocr_verification")
+                if ocr_vr:
+                    ocr_image_results.append(ocr_vr)
+                raw_part = (im.gemini_response or {}).get("raw")
+                try:
+                    combined_text += "\n" + (raw_part if isinstance(raw_part, str) else json.dumps(raw_part))
+                except Exception:
+                    combined_text += "\n"
+
+            if per_image_results and isinstance(per_image_results[0], dict) and "brand_name" in per_image_results[0]:
+                brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in per_image_results)
+                class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in per_image_results)
+                ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in per_image_results)
+                net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in per_image_results)
+                gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in per_image_results)
+                combined = {
+                    "brand_name": {"match": brand_ok},
+                    "product_class_type": {"match": class_ok},
+                    "alcohol_content": {"match": ac_ok},
+                    "net_contents": {"match": net_ok, "optional": True},
+                    "government_warning_present": {"match": gov_ok},
+                    "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                }
+            else:
+                expected_brand = submission.brand_name or submission.company.name
+                combined = _verify_against_prd(
+                    combined_text,
+                    brand_name=expected_brand,
+                    product_class_type=submission.product_class_type,
+                    alcohol_content=submission.alcohol_content,
+                    net_contents=submission.net_contents,
+                )
+
+            # OCR combined
+            combined_ocr = None
+            if ocr_image_results:
+                brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in ocr_image_results)
+                class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in ocr_image_results)
+                ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in ocr_image_results)
+                net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in ocr_image_results)
+                gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in ocr_image_results)
+                combined_ocr = {
+                    "brand_name": {"match": brand_ok},
+                    "product_class_type": {"match": class_ok},
+                    "alcohol_content": {"match": ac_ok},
+                    "net_contents": {"match": net_ok, "optional": True},
+                    "government_warning_present": {"match": gov_ok},
+                    "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                }
+
+            submission.gemini_response = {"images": per_image_results, "ocr_images": ocr_image_results, "ocr_overall": combined_ocr}
             submission.verification_result = combined
-            submission.status = Submission.STATUS_PROCESSED
-            submission.save(update_fields=["gemini_response", "verification_result", "status"])
-            messages.success(request, "Re-analysis complete.")
+            submission.save(update_fields=["gemini_response", "verification_result"])
+            messages.success(request, "Image re-analyzed.")
         except Exception as exc:
-            logger.exception("SubmissionReanalyzeView: failed re-analysis: %s", exc)
+            logger.exception("SubmissionImageReanalyzeView: failed re-analysis: %s", exc)
             submission.status = Submission.STATUS_FAILED
             submission.error_message = str(exc)
             submission.save(update_fields=["status", "error_message"])
@@ -224,27 +630,98 @@ class SubmissionCreateView(LoginRequiredMixin, CreateView):
                 with open(local_path, "rb") as fh:
                     image_bytes = fh.read()
                 response_text = call_gemini_with_image_bytes(image_bytes, self.object.gemini_model)
+
+                verification_payload = None
+                if verification_service is not None:
+                    extracted = {}
+                    try:
+                        extracted = json.loads(response_text or "{}") if isinstance(response_text, str) else (response_text or {})
+                    except Exception:
+                        extracted = {}
+                
+                # Normalize extracted keys/values for verification service
+                if isinstance(extracted, dict):
+                    if "product_class" in extracted and "product_type" not in extracted:
+                        extracted["product_type"] = extracted.get("product_class")
+                    ac_val = extracted.get("alcohol_content")
+                    if isinstance(ac_val, str):
+                        try:
+                            extracted["alcohol_content"] = float(ac_val.replace("%", "").strip())
+                        except Exception:
+                            pass
+                    if not extracted.get("all_text_found") and isinstance(response_text, str):
+                        extracted["all_text_found"] = response_text
+                    form_data = {
+                        "brand_name": self.object.brand_name or self.object.company.name,
+                        "product_type": self.object.product_class_type,
+                        "alcohol_content": self.object.alcohol_content,
+                        "net_contents": self.object.net_contents,
+                    }
+                    try:
+                        fields_result = verification_service.compare_fields(form_data, extracted)
+                        status, overall_conf = verification_service.get_overall_status(fields_result)
+                        verification_payload = {"fields": fields_result, "overall": {"status": status, "confidence": overall_conf}}
+                    except Exception:
+                        verification_payload = None
+
+                if verification_payload is None:
+                    expected_brand = self.object.brand_name or self.object.company.name
+                    per_ver = _verify_against_prd(
+                        response_text or "",
+                        brand_name=expected_brand,
+                        product_class_type=self.object.product_class_type,
+                        alcohol_content=self.object.alcohol_content,
+                        net_contents=self.object.net_contents,
+                    )
+                    img.gemini_response = {"raw": response_text, "verification": per_ver}
+                    per_image_results.append(per_ver)
+                else:
+                    fields = (verification_payload.get("fields") or {})
+                    brand_ok = bool((fields.get("brand_name") or {}).get("matched"))
+                    class_ok = bool((fields.get("product_type") or {}).get("matched"))
+                    ac_ok = bool((fields.get("alcohol_content") or {}).get("matched"))
+                    net_ok = bool((fields.get("net_contents") or {}).get("matched"))
+                    gov_ok = bool((fields.get("government_warning") or {}).get("matched"))
+                    legacy = {
+                        "brand_name": {"match": brand_ok},
+                        "product_class_type": {"match": class_ok},
+                        "alcohol_content": {"match": ac_ok},
+                        "net_contents": {"match": net_ok},
+                        "government_warning_present": {"match": gov_ok},
+                        "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                    }
+                    img.gemini_response = {"raw": response_text, "verification": legacy}
+                    per_image_results.append(legacy)
+                img.save()
+                try:
+                    combined_text += "\n" + (response_text if isinstance(response_text, str) else json.dumps(response_text))
+                except Exception:
+                    combined_text += "\n"
+
+            combined = None
+            if per_image_results and isinstance(per_image_results[0], dict) and "brand_name" in per_image_results[0]:
+                brand_ok = any(bool((r.get("brand_name") or {}).get("match")) for r in per_image_results)
+                class_ok = any(bool((r.get("product_class_type") or {}).get("match")) for r in per_image_results)
+                ac_ok = any(bool((r.get("alcohol_content") or {}).get("match")) for r in per_image_results)
+                net_ok = any(bool((r.get("net_contents") or {}).get("match")) for r in per_image_results)
+                gov_ok = any(bool((r.get("government_warning_present") or {}).get("match")) for r in per_image_results)
+                combined = {
+                    "brand_name": {"match": brand_ok},
+                    "product_class_type": {"match": class_ok},
+                    "alcohol_content": {"match": ac_ok},
+                    "net_contents": {"match": net_ok, "optional": True},
+                    "government_warning_present": {"match": gov_ok},
+                    "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
+                }
+            else:
                 expected_brand = self.object.brand_name or self.object.company.name
-                per_ver = _verify_against_prd(
-                    response_text or "",
+                combined = _verify_against_prd(
+                    combined_text,
                     brand_name=expected_brand,
                     product_class_type=self.object.product_class_type,
                     alcohol_content=self.object.alcohol_content,
                     net_contents=self.object.net_contents,
                 )
-                img.gemini_response = {"raw": response_text, "verification": per_ver}
-                img.save()
-                per_image_results.append(per_ver)
-                combined_text += "\n" + (response_text or "")
-
-            expected_brand = self.object.brand_name or self.object.company.name
-            combined = _verify_against_prd(
-                combined_text,
-                brand_name=expected_brand,
-                product_class_type=self.object.product_class_type,
-                alcohol_content=self.object.alcohol_content,
-                net_contents=self.object.net_contents,
-            )
 
             self.object.gemini_response = {"images": per_image_results}
             self.object.verification_result = combined
@@ -265,18 +742,29 @@ def _normalize_text(text: str) -> str:
 
 
 def _verify_against_prd(extracted_text: str, *, brand_name: str, product_class_type: str, alcohol_content: str, net_contents: str):
+    import re
     text = _normalize_text(extracted_text)
     brand_ok = _normalize_text(brand_name) in text if brand_name else False
     class_ok = _normalize_text(product_class_type) in text if product_class_type else False
-    # Alcohol content: accept "45%" or number with optional spaces
+    # Alcohol content: exact numeric match (ignoring additional decimal places)
     ac = (alcohol_content or "").strip()
     ac_ok = False
-    if ac:
-        ac_lower = _normalize_text(ac)
-        ac_ok = ac_lower in text
-        if not ac_ok and ac_lower.endswith("%"):
-            alt = ac_lower.replace("%", " %")
-            ac_ok = alt in text
+    try:
+        if ac:
+            # expected numeric value without % sign
+            exp = _normalize_text(ac).replace("%", "").strip()
+            expected_val = float(exp)
+            # find all numbers followed by optional space and % in the text
+            for m in re.finditer(r"(\d+(?:\.\d+)?)\s*%", text):
+                try:
+                    found_val = float(m.group(1))
+                except Exception:
+                    continue
+                if abs(found_val - expected_val) <= 0.0:
+                    ac_ok = True
+                    break
+    except Exception:
+        ac_ok = False
     net_ok = _normalize_text(net_contents) in text if net_contents else True  # optional
     gov_warn_ok = "government warning" in text
     all_ok = brand_ok and class_ok and ac_ok and net_ok and gov_warn_ok

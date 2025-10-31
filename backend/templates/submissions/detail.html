@@ -3,7 +3,7 @@
 <h2 class="text-2xl font-semibold mb-4">Submission #{{ submission.id }}</h2>
 <div class="space-y-1 mb-4">
   <p><span class="font-semibold">Company:</span> {{ submission.company.name }}</p>
-  <p><span class="font-semibold">Location:</span> {{ submission.location.name }}</p>
+  <p><span class="font-semibold">Location:</span> {{ submission.location.name|default:"-" }}</p>
   <p><span class="font-semibold">Status:</span> {{ submission.status }}</p>
   <div class="mt-2">
     <form method="post" action="{% url 'submission_reanalyze' submission.pk %}">
@@ -31,8 +31,13 @@
         <img src="{{ img.image_url }}" alt="image {{ forloop.counter }}" class="w-full h-auto mb-2" />
       {% endif %}
       <p class="text-xs break-all">{{ img.gcs_uri }}</p>
+      <form method="post" action="{% url 'submission_image_reanalyze' submission.pk img.id %}" class="mt-2">
+        {% csrf_token %}
+        <button type="submit" class="text-xs text-white bg-blue-600 hover:bg-blue-700 rounded px-2 py-1">Re-analyze this image</button>
+      </form>
       {% if img.verification %}
         <div class="mt-2 text-xs">
+          <div class="font-semibold mb-1">Gemini AI results</div>
           <div>
             <span class="font-semibold">Brand:</span>
             <span class="{% if img.verification.brand_name.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.verification.brand_name.match }}</span>
@@ -52,6 +57,31 @@
           <div>
             <span class="font-semibold">Gov warning:</span>
             <span class="{% if img.verification.government_warning_present.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.verification.government_warning_present.match }}</span>
+          </div>
+        </div>
+      {% endif %}
+      {% if img.ocr_verification %}
+        <div class="mt-2 text-xs">
+          <div class="font-semibold mb-1">Local OCR results</div>
+          <div>
+            <span class="font-semibold">Brand:</span>
+            <span class="{% if img.ocr_verification.brand_name.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.ocr_verification.brand_name.match }}</span>
+          </div>
+          <div>
+            <span class="font-semibold">Class/Type:</span>
+            <span class="{% if img.ocr_verification.product_class_type.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.ocr_verification.product_class_type.match }}</span>
+          </div>
+          <div>
+            <span class="font-semibold">Alcohol:</span>
+            <span class="{% if img.ocr_verification.alcohol_content.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.ocr_verification.alcohol_content.match }}</span>
+          </div>
+          <div>
+            <span class="font-semibold">Net contents:</span>
+            <span class="{% if img.ocr_verification.net_contents.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.ocr_verification.net_contents.match }}</span>
+          </div>
+          <div>
+            <span class="font-semibold">Gov warning:</span>
+            <span class="{% if img.ocr_verification.government_warning_present.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.ocr_verification.government_warning_present.match }}</span>
           </div>
         </div>
       {% endif %}
@@ -96,6 +126,63 @@
 {% else %}
   <p class="text-sm">No verification results.</p>
 {% endif %}
+
+{% if submission.gemini_response.ocr_overall %}
+  <h3 class="text-xl font-semibold mt-6 mb-2">Local OCR Verification</h3>
+  <div class="rounded border p-3 text-sm">
+    {% with v=submission.gemini_response.ocr_overall %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div><span class="font-semibold">Brand match:</span> <span class="{% if v.brand_name.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.brand_name.match }}</span></div>
+        <div><span class="font-semibold">Class/Type match:</span> <span class="{% if v.product_class_type.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.product_class_type.match }}</span></div>
+        <div><span class="font-semibold">Alcohol content match:</span> <span class="{% if v.alcohol_content.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.alcohol_content.match }}</span></div>
+        <div><span class="font-semibold">Net contents match (optional):</span> <span class="{% if v.net_contents.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.net_contents.match }}</span></div>
+        <div><span class="font-semibold">Government warning present:</span> <span class="{% if v.government_warning_present.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.government_warning_present.match }}</span></div>
+      </div>
+      <div class="mt-3">
+        <span class="font-semibold">Overall:</span>
+        <span class="{% if v.all_pass %}text-green-800{% else %}text-red-800{% endif %}">{% if v.all_pass %}PASS{% else %}FAIL{% endif %}</span>
+      </div>
+    {% endwith %}
+  </div>
+{% endif %}
+
+<h3 class="text-xl font-semibold mt-6 mb-4">Comments</h3>
+
+<!-- Comment Form -->
+<div class="bg-gray-50 rounded-lg border p-4 mb-6">
+  <form method="post" action="{% url 'submission_comment_create' submission.pk %}">
+    {% csrf_token %}
+    <div class="mb-3">
+      {{ comment_form.text }}
+    </div>
+    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
+      Add Comment
+    </button>
+  </form>
+</div>
+
+<!-- Comments List -->
+<div class="space-y-4">
+  {% for comment in comments %}
+    <div class="border rounded-lg p-4">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <span class="font-semibold text-gray-900">
+            {% if comment.user %}
+              {{ comment.user.username }}
+            {% else %}
+              Anonymous
+            {% endif %}
+          </span>
+        </div>
+        <span class="text-xs text-gray-500">{{ comment.created_at|date:"M d, Y H:i" }}</span>
+      </div>
+      <p class="text-gray-700 whitespace-pre-wrap">{{ comment.text }}</p>
+    </div>
+  {% empty %}
+    <p class="text-gray-500 italic">No comments yet. Be the first to comment!</p>
+  {% endfor %}
+</div>
 
 {% endblock %}
 

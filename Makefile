@@ -1,7 +1,7 @@
 # Alcohol Label Verification App - Makefile
 # Provides convenient commands for Docker management
 
-.PHONY: help dev prod stop logs clean ssl setup migrate makemigrations superuser manage tailwind-init tailwind-install tailwind-dev
+.PHONY: help dev prod stop logs clean ssl setup migrate makemigrations superuser manage tailwind-init tailwind-install tailwind-dev seed-all seed-beer seed-wine seed-liquor seed-one
 
 # Default target
 help:
@@ -22,6 +22,11 @@ help:
 	@echo "  make tailwind-init     Initialize django-tailwind theme app"
 	@echo "  make tailwind-install  Install Tailwind NPM deps in the theme"
 	@echo "  make tailwind-dev      Run Tailwind dev (hot reload)"
+	@echo "  make seed-all          Seed all categories (beer, wine, liquor)"
+	@echo "  make seed-beer         Seed beer category only"
+	@echo "  make seed-wine         Seed wine category only"
+	@echo "  make seed-liquor       Seed liquor category only"
+	@echo "  make seed-one ID=beer_pass_001  Seed a single item by ID"
 	@echo "  make help     Show this help message"
 	@echo ""
 	@echo "Examples:"
@@ -173,3 +178,23 @@ restore: check-docker
 	@echo "Restoring database from $(FILE)..."
 	@$(DOCKER_COMPOSE) exec -T postgres psql -U postgres alcohol_label_verification < $(FILE)
 	@echo "Database restored"
+
+# Data seeding
+seed-all: check-docker
+	@$(DOCKER_COMPOSE) exec app python data/sample/seed.py --all
+
+seed-beer: check-docker
+	@$(DOCKER_COMPOSE) exec app python data/sample/seed.py --beer
+
+seed-wine: check-docker
+	@$(DOCKER_COMPOSE) exec app python data/sample/seed.py --wine
+
+seed-liquor: check-docker
+	@$(DOCKER_COMPOSE) exec app python data/sample/seed.py --liquor
+
+seed-one: check-docker
+	@if [ -z "$(ID)" ]; then \
+		echo "Usage: make seed-one ID=beer_pass_004"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec app python data/sample/seed.py --all --only-id $(ID)

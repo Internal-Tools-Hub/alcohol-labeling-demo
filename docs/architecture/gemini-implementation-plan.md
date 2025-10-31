@@ -160,7 +160,7 @@ Analyze this alcohol beverage label image and perform the following tasks:
    For each field, compare what you see on the label with the submitted information:
    - Use case-insensitive comparison for text fields
    - Allow minor formatting differences (e.g., "45%" vs "45.0% ABV")
-   - For alcohol content, allow ±0.5% tolerance
+   - For alcohol content, require an exact numeric match (ignore extra trailing decimals)
    - For net contents, normalize units (750ml = 750 mL)
    - Consider OCR-like variations (e.g., "O" vs "0")
 

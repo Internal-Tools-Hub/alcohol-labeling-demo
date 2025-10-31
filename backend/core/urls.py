@@ -9,6 +9,8 @@ urlpatterns = [
     path("submissions/create/", views.SubmissionCreateView.as_view(), name="submission_create"),
     path("submissions/<int:pk>/", views.SubmissionDetailView.as_view(), name="submission_detail"),
     path("submissions/<int:pk>/reanalyze/", views.SubmissionReanalyzeView.as_view(), name="submission_reanalyze"),
+    path("submissions/<int:pk>/comments/", views.SubmissionCommentCreateView.as_view(), name="submission_comment_create"),
+    path("submissions/<int:pk>/images/<int:image_id>/reanalyze/", views.SubmissionImageReanalyzeView.as_view(), name="submission_image_reanalyze"),
 
     path("companies/", views.CompanyListView.as_view(), name="company_list"),
     path("companies/create/", views.CompanyCreateView.as_view(), name="company_create"),
