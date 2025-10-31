@@ -1,6 +1,6 @@
 pass:
   - id: "wine_pass_001"
-    brand_name: "Vineyard Estate Chardonnay"
+    brand_name: "Vineyard Estate"
     product_type: "Chardonnay"
     alcohol_content: 13.5
     net_contents: "750 ml"
@@ -10,7 +10,7 @@ pass:
     bottler_name: "Vineyard Estate Winery"
     
   - id: "wine_pass_002"
-    brand_name: "Sunset Hills Cabernet"
+    brand_name: "Sunset Hills"
     product_type: "Cabernet Sauvignon"
     alcohol_content: 14.2
     net_contents: "750 ml"
@@ -20,7 +20,7 @@ pass:
     bottler_name: "Sunset Hills Winery"
     
   - id: "wine_pass_003"
-    brand_name: "Coastal Pinot Noir"
+    brand_name: "Coastal"
     product_type: "Pinot Noir"
     alcohol_content: 13.8
     net_contents: "750 ml"
@@ -30,7 +30,7 @@ pass:
     bottler_name: "Coastal Winery"
     
   - id: "wine_pass_004"
-    brand_name: "Garden Rose"
+    brand_name: "Garden"
     product_type: "Rose"
     alcohol_content: 12.9
     net_contents: "750 ml"
@@ -40,7 +40,7 @@ pass:
     bottler_name: "Garden Winery"
     
   - id: "wine_pass_005"
-    brand_name: "Mountain View Merlot"
+    brand_name: "Mountain View"
     product_type: "Merlot"
     alcohol_content: 14.0
     net_contents: "750 ml"
@@ -50,7 +50,7 @@ pass:
     bottler_name: "Mountain View Winery"
     
   - id: "wine_pass_006"
-    brand_name: "Valley Riesling"
+    brand_name: "Valley"
     product_type: "Riesling"
     alcohol_content: 11.5
     net_contents: "750 ml"
@@ -60,7 +60,7 @@ pass:
     bottler_name: "Valley Winery"
     
   - id: "wine_pass_007"
-    brand_name: "Heritage Syrah"
+    brand_name: "Heritage"
     product_type: "Syrah"
     alcohol_content: 14.5
     net_contents: "750 ml"
@@ -70,7 +70,7 @@ pass:
     bottler_name: "Heritage Winery"
     
   - id: "wine_pass_008"
-    brand_name: "Spring Sauvignon Blanc"
+    brand_name: "Spring"
     product_type: "Sauvignon Blanc"
     alcohol_content: 12.8
     net_contents: "750 ml"
@@ -90,7 +90,7 @@ pass:
     bottler_name: "Estate Reserve Winery"
     
   - id: "wine_pass_010"
-    brand_name: "Dessert Port"
+    brand_name: "Dessert"
     product_type: "Port"
     alcohol_content: 18.0
     net_contents: "375 ml"
