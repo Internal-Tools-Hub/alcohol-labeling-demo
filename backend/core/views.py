@@ -573,8 +573,8 @@ class SubmissionReanalyzeView(LoginRequiredMixin, View):
             submission.error_message = str(exc)
             submission.save(update_fields=["status", "error_message"])
             messages.error(request, f"Re-analysis failed for submission #{submission.pk}: {exc}")
-        # Redirect back to list page for bulk processing
-        return redirect("submission_list")
+        # Redirect to the submission detail page
+        return redirect("submission_detail", pk=submission.pk)
 
 
 class SubmissionCommentCreateView(LoginRequiredMixin, View):
