@@ -104,6 +104,77 @@ def _combine_verification_results(results: list, field_name: str, submission: Su
     }
 
 
+def _blend_verification_results(gemini_result: dict, ocr_result: dict, submission: Submission) -> dict:
+    """
+    Blend Gemini and OCR verification results. If either passes for a metric, the metric passes.
+    This helps reduce flaky false negatives.
+    """
+    if not gemini_result and not ocr_result:
+        return None
+    
+    # Field mapping: both results use the same field names
+    fields = ["brand_name", "product_class_type", "alcohol_content", "net_contents", "government_warning_present"]
+    blended = {}
+    
+    for field_name in fields:
+        gemini_match = False
+        ocr_match = False
+        expected_val = None
+        
+        # Get Gemini result
+        if gemini_result and field_name in gemini_result:
+            field_data = gemini_result.get(field_name, {})
+            if isinstance(field_data, dict):
+                gemini_match = bool(field_data.get("match", False))
+                if "expected" in field_data:
+                    expected_val = field_data.get("expected")
+        
+        # Get OCR result
+        if ocr_result and field_name in ocr_result:
+            field_data = ocr_result.get(field_name, {})
+            if isinstance(field_data, dict):
+                ocr_match = bool(field_data.get("match", False))
+                if expected_val is None and "expected" in field_data:
+                    expected_val = field_data.get("expected")
+        
+        # Fallback to submission data if no expected value found
+        if expected_val is None:
+            if field_name == "brand_name":
+                expected_val = submission.brand_name or submission.company.name
+            elif field_name == "product_class_type":
+                expected_val = submission.product_class_type
+            elif field_name == "alcohol_content":
+                expected_val = submission.alcohol_content
+            elif field_name == "net_contents":
+                expected_val = submission.net_contents
+            elif field_name == "government_warning_present":
+                expected_val = True
+        
+        # Blend: if either passes, the metric passes
+        blended_match = gemini_match or ocr_match
+        
+        blended[field_name] = {
+            "expected": expected_val,
+            "extracted": None,  # Blended results don't have a single extracted value
+            "match": blended_match,
+        }
+        
+        # Preserve optional flag for net_contents
+        if field_name == "net_contents":
+            blended[field_name]["optional"] = True
+    
+    # Calculate overall pass
+    blended["all_pass"] = all([
+        blended["brand_name"]["match"],
+        blended["product_class_type"]["match"],
+        blended["alcohol_content"]["match"],
+        blended["net_contents"]["match"],
+        blended["government_warning_present"]["match"],
+    ])
+    
+    return blended
+
+
 class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
@@ -284,6 +355,11 @@ class HomeView(LoginRequiredMixin, TemplateView):
                 gr["ocr_images"] = ocr_image_results
                 gr["ocr_overall"] = combined_ocr
                 submission.gemini_response = gr
+                # Compute and store blended results (Gemini + OCR)
+                blended_result = _blend_verification_results(combined, combined_ocr, submission)
+                if blended_result:
+                    gr["blended_result"] = blended_result
+                    submission.gemini_response = gr
                 # Persist full OCR extract for the submission
                 submission.ocr_extract = {
                     "gemini": {"combined_text": combined_text.strip()},
@@ -478,7 +554,11 @@ class SubmissionReanalyzeView(LoginRequiredMixin, View):
                     "all_pass": brand_ok and class_ok and ac_ok and net_ok and gov_ok,
                 }
 
+            # Compute and store blended results (Gemini + OCR)
+            blended_result = _blend_verification_results(combined, combined_ocr, submission)
             submission.gemini_response = {"images": per_image_results, "ocr_images": ocr_image_results, "ocr_overall": combined_ocr}
+            if blended_result:
+                submission.gemini_response["blended_result"] = blended_result
             submission.verification_result = combined
             submission.ocr_extract = {
                 "gemini": {"combined_text": combined_text.strip()},

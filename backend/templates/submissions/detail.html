@@ -14,13 +14,19 @@
   <p><span class="font-semibold">Company:</span> {{ submission.company.name }}</p>
   <p><span class="font-semibold">Location:</span> {{ submission.location.name|default:"-" }}</p>
   <p><span class="font-semibold">Status:</span> {{ submission.status }}</p>
-  <div class="mt-2">
+  <div class="mt-2 flex gap-2">
     <form method="post" action="{% url 'submission_reanalyze' submission.pk %}">
       {% csrf_token %}
       <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
         AI Re-analyze
       </button>
     </form>
+    <a href="/admin/core/submission/{{ submission.pk }}/change/" class="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-600 dark:hover:bg-gray-700 focus:outline-none dark:focus:ring-gray-800 inline-flex items-center" target="_blank">
+      Admin Page
+      <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+      </svg>
+    </a>
   </div>
   <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
     <p><span class="font-semibold">Brand (form):</span> {{ submission.brand_name }}</p>
@@ -100,7 +106,7 @@
   {% endfor %}
   </div>
 
-<h3 class="text-xl font-semibold mb-2">Verification</h3>
+<h3 class="text-xl font-semibold mb-2">Gemini Verification</h3>
 {% if submission.verification_result %}
   <div class="rounded border p-3 text-sm">
     {% with v=submission.verification_result %}
@@ -150,6 +156,41 @@
       <div class="mt-3">
         <span class="font-semibold">Overall:</span>
         <span class="{% if v.all_pass %}text-green-800{% else %}text-red-800{% endif %}">{% if v.all_pass %}PASS{% else %}FAIL{% endif %}</span>
+      </div>
+    {% endwith %}
+  </div>
+{% endif %}
+
+{% if submission.gemini_response.blended_result %}
+  <h3 class="text-xl font-semibold mt-6 mb-2">Blended Verification (Gemini + OCR)</h3>
+  <div class="rounded border p-3 text-sm bg-blue-50 border-blue-200">
+    <p class="text-xs text-gray-600 mb-3 italic">If either Gemini or Local OCR passes for a metric, the metric passes. This helps reduce flaky false negatives.</p>
+    {% with v=submission.gemini_response.blended_result %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div>
+          <span class="font-semibold">Brand match:</span>
+          <span class="{% if v.brand_name.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.brand_name.match }}</span>
+        </div>
+        <div>
+          <span class="font-semibold">Class/Type match:</span>
+          <span class="{% if v.product_class_type.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.product_class_type.match }}</span>
+        </div>
+        <div>
+          <span class="font-semibold">Alcohol content match:</span>
+          <span class="{% if v.alcohol_content.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.alcohol_content.match }}</span>
+        </div>
+        <div>
+          <span class="font-semibold">Net contents match (optional):</span>
+          <span class="{% if v.net_contents.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.net_contents.match }}</span>
+        </div>
+        <div>
+          <span class="font-semibold">Government warning present:</span>
+          <span class="{% if v.government_warning_present.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.government_warning_present.match }}</span>
+        </div>
+      </div>
+      <div class="mt-3">
+        <span class="font-semibold">Overall:</span>
+        <span class="{% if v.all_pass %}text-green-800{% else %}text-red-800{% endif %} font-bold">{% if v.all_pass %}PASS{% else %}FAIL{% endif %}</span>
       </div>
     {% endwith %}
   </div>

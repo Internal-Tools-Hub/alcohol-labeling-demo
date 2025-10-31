@@ -24,7 +24,7 @@
     </thead>
     <tbody>
       {% for s in submissions %}
-        {% with ver=s.verification_result %}
+        {% with ver=s.verification_result blended=s.gemini_response.blended_result %}
         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
           <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
             <a class="font-medium text-blue-600 dark:text-blue-500 hover:underline" href="{% url 'submission_detail' s.id %}">#{{ s.id }}</a>
@@ -36,52 +36,60 @@
             {% endif %}
           </td>
           <td class="px-6 py-4">
-            {% if s.status == "pending" %}
-              <form method="post" action="{% url 'submission_reanalyze' s.id %}" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="text-xs font-medium px-2.5 py-1 rounded-sm bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors">AI Reanalyze</button>
-              </form>
-            {% else %}
-              <span class="text-xs font-medium px-2.5 py-1 rounded-sm {% if s.status == 'processed' %}bg-green-100 text-green-800{% elif s.status == 'failed' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %}">{{ s.status }}</span>
-            {% endif %}
+            <form method="post" action="{% url 'submission_reanalyze' s.id %}" style="display: inline;">
+              {% csrf_token %}
+              <button type="submit" class="text-xs font-medium px-2.5 py-1 rounded-sm {% if s.status == 'processed' %}bg-green-100 text-green-800 hover:bg-green-200{% elif s.status == 'failed' %}bg-red-100 text-red-800 hover:bg-red-200{% else %}bg-gray-100 text-gray-800 hover:bg-gray-200{% endif %} cursor-pointer transition-colors">{{ s.status }}</button>
+            </form>
           </td>
           <td class="px-6 py-4">
-            {% if ver and ver.brand_name.match %}
+            {% if blended and blended.brand_name.match %}
+              <span class="text-green-600">✓</span>
+            {% elif ver and ver.brand_name.match %}
               <span class="text-green-600">✓</span>
             {% else %}
               <span class="text-red-600">✗</span>
             {% endif %}
           </td>
           <td class="px-6 py-4">
-            {% if ver and ver.product_class_type.match %}
+            {% if blended and blended.product_class_type.match %}
+              <span class="text-green-600">✓</span>
+            {% elif ver and ver.product_class_type.match %}
               <span class="text-green-600">✓</span>
             {% else %}
               <span class="text-red-600">✗</span>
             {% endif %}
           </td>
           <td class="px-6 py-4">
-            {% if ver and ver.alcohol_content.match %}
+            {% if blended and blended.alcohol_content.match %}
+              <span class="text-green-600">✓</span>
+            {% elif ver and ver.alcohol_content.match %}
               <span class="text-green-600">✓</span>
             {% else %}
               <span class="text-red-600">✗</span>
             {% endif %}
           </td>
           <td class="px-6 py-4">
-            {% if ver and ver.net_contents.match %}
+            {% if blended and blended.net_contents.match %}
+              <span class="text-green-600">✓</span>
+            {% elif ver and ver.net_contents.match %}
               <span class="text-green-600">✓</span>
             {% else %}
               <span class="text-red-600">✗</span>
             {% endif %}
           </td>
           <td class="px-6 py-4">
-            {% if ver and ver.government_warning_present.match %}
+            {% if blended and blended.government_warning_present.match %}
+              <span class="text-green-600">✓</span>
+            {% elif ver and ver.government_warning_present.match %}
               <span class="text-green-600">✓</span>
             {% else %}
               <span class="text-red-600">✗</span>
             {% endif %}
           </td>
           <td class="px-6 py-4">
-            {% if ver and ver.all_pass %}
+            {% if blended and blended.all_pass %}
+              <span class="font-semibold text-green-700">PASS</span>
+            {% elif ver and ver.all_pass %}
               <span class="font-semibold text-green-700">PASS</span>
             {% else %}
               <span class="font-semibold text-red-600">FAIL</span>
