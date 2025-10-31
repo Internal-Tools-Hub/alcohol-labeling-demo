@@ -3,37 +3,107 @@
 <div class="flex items-center justify-between">
   <h2 class="text-2xl font-semibold">Submissions</h2>
   <a href="{% url 'submission_create' %}" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">New</a>
+  
 </div>
+
 <div class="mt-3 relative overflow-x-auto">
   <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
       <tr>
-        <th scope="col" class="px-6 py-3">ID</th>
+        <th scope="col" class="px-6 py-3">Submission ID</th>
         <th scope="col" class="px-6 py-3">Company</th>
-        <th scope="col" class="px-6 py-3">Location</th>
         <th scope="col" class="px-6 py-3">Status</th>
+        <th scope="col" class="px-3 py-3">Brand</th>
+        <th scope="col" class="px-3 py-3">Class/Type</th>
+        <th scope="col" class="px-3 py-3">Alcohol content</th>
+        <th scope="col" class="px-3 py-3">Net contents</th>
+        <th scope="col" class="px-3 py-3">Govt warning</th>
+        <th scope="col" class="px-3 py-3">Overall</th>
         <th scope="col" class="px-6 py-3">Created</th>
       </tr>
     </thead>
     <tbody>
       {% for s in submissions %}
+        {% with ver=s.verification_result %}
         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
           <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
             <a class="font-medium text-blue-600 dark:text-blue-500 hover:underline" href="{% url 'submission_detail' s.id %}">#{{ s.id }}</a>
           </th>
           <td class="px-6 py-4">{{ s.company.name }}</td>
-          <td class="px-6 py-4">{{ s.location.name }}</td>
           <td class="px-6 py-4">{{ s.status }}</td>
-          <td class="px-6 py-4">{{ s.created_at }}</td>
+          <td class="px-6 py-4">
+            {% if ver and ver.brand_name.match %}
+              <span class="text-green-600">✓</span>
+            {% else %}
+              <span class="text-red-600">✗</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if ver and ver.product_class_type.match %}
+              <span class="text-green-600">✓</span>
+            {% else %}
+              <span class="text-red-600">✗</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if ver and ver.alcohol_content.match %}
+              <span class="text-green-600">✓</span>
+            {% else %}
+              <span class="text-red-600">✗</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if ver and ver.net_contents.match %}
+              <span class="text-green-600">✓</span>
+            {% else %}
+              <span class="text-red-600">✗</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if ver and ver.government_warning_present.match %}
+              <span class="text-green-600">✓</span>
+            {% else %}
+              <span class="text-red-600">✗</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if ver and ver.all_pass %}
+              <span class="font-semibold text-green-700">PASS</span>
+            {% else %}
+              <span class="font-semibold text-red-600">FAIL</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4" title="{{ s.created_at }}">{{ s.created_at|timesince }} ago</td>
         </tr>
+        {% endwith %}
       {% empty %}
         <tr class="bg-white dark:bg-gray-800">
-          <td class="px-6 py-4" colspan="5">No submissions yet.</td>
+          <td class="px-6 py-4" colspan="10">No submissions yet.</td>
         </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
+{% if is_paginated %}
+  <div class="flex items-center justify-between mt-4">
+    <div>
+      <span class="text-sm text-gray-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    </div>
+    <div class="inline-flex gap-2">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-sm rounded border text-blue-700 border-blue-300 hover:bg-blue-50">Previous</a>
+      {% else %}
+        <span class="px-3 py-2 text-sm rounded border text-gray-400 border-gray-200">Previous</span>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-sm rounded border text-blue-700 border-blue-300 hover:bg-blue-50">Next</a>
+      {% else %}
+        <span class="px-3 py-2 text-sm rounded border text-gray-400 border-gray-200">Next</span>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
 {% endblock %}
 
 

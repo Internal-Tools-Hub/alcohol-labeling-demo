@@ -115,7 +115,7 @@ start_development() {
     
     $COMPOSE_CMD up -d app
     print_success "Development environment started"
-    print_status "Application will be available at: http://localhost:8501"
+    print_status "Application will be available at: http://localhost:8000"
     print_status "Database will be available at: localhost:5432"
 }
 

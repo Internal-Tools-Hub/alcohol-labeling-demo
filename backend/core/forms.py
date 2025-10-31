@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm
 from .models import Company, Location, Submission
 
 # Shared Tailwind input classes for consistent styling across forms
@@ -116,4 +117,19 @@ class SubmissionForm(forms.ModelForm):
             except (ValueError, TypeError):
                 self.fields["location"].queryset = Location.objects.none()
 
+
+
+class TailwindAuthenticationForm(AuthenticationForm):
+    """Authentication form that applies Tailwind classes to inputs."""
+
+    INPUT_CLASSES = (
+        "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 "
+        "leading-tight focus:outline-none focus:shadow-outline"
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            existing = field.widget.attrs.get("class", "").strip()
+            field.widget.attrs["class"] = f"{existing} {self.INPUT_CLASSES}".strip()
 

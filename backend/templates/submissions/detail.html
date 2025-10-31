@@ -47,7 +47,7 @@
           </div>
           <div>
             <span class="font-semibold">Net contents:</span>
-            <span class="{% if img.verification.net_contents.match %}text-green-700{% else %}text-yellow-700{% endif %}">{{ img.verification.net_contents.match }}</span>
+            <span class="{% if img.verification.net_contents.match %}text-green-700{% else %}text-red-700{% endif %}">{{ img.verification.net_contents.match }}</span>
           </div>
           <div>
             <span class="font-semibold">Gov warning:</span>
@@ -80,7 +80,7 @@
         </div>
         <div>
           <span class="font-semibold">Net contents match (optional):</span>
-          <span class="{% if v.net_contents.match %}text-green-700{% else %}text-yellow-700{% endif %}">{{ v.net_contents.match }}</span>
+          <span class="{% if v.net_contents.match %}text-green-700{% else %}text-red-700{% endif %}">{{ v.net_contents.match }}</span>
         </div>
         <div>
           <span class="font-semibold">Government warning present:</span>

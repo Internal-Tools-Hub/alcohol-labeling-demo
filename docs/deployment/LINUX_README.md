@@ -1,7 +1,7 @@
-# Deploy on Rocky Linux (Docker Compose)
+# Deploy on Linux Server (Docker Compose)
 
 Assumptions
-- Fresh Rocky Linux 8/9 VM with SSH access
+- Fresh Linux VM (e.g., Rocky Linux 8/9, Ubuntu 22.04) with SSH access
 - You have a non-root user with sudo
 - You have a GCP service account (optional) and GCS bucket ready
 
@@ -17,12 +17,15 @@ cd .ssh
 cat id_ed25519.pub #copy contents to above link as a new key
 
 # Clone repo (or copy via scp)
-sudo dnf -y install git
-git clone https://github.com/your-org/alcohol-labeling-demo.git
+sudo dnf -y install git || sudo apt-get update && sudo apt-get install -y git
+git clone git@github.com:Internal-Tools-Hub/alcohol-labeling-demo.git
 cd alcohol-labeling-demo
 
 # Install Docker Engine + Compose plugin
+# Rocky Linux / RHEL:
 sudo bash scripts/bootstrap_rocky_docker.sh
+# Ubuntu (alternative): https://docs.docker.com/engine/install/ubuntu/
+
 # Re-login to pick up docker group
 exit
 ssh youruser@your-server
