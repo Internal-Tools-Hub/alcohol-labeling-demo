@@ -14,6 +14,30 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-secret-key-not-for-prod")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
+# CSRF and Security settings for reverse proxy (nginx)
+# Trust CSRF tokens from these origins
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=[
+        "https://label-review.masonhensley.com",
+        "http://label-review.masonhensley.com",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+)
+
+# When running behind a reverse proxy (nginx), Django needs to trust the X-Forwarded-Proto header
+# This tells Django that HTTPS is being used even though the connection to Django is HTTP
+# Only set this when behind a proxy (always true in our docker setup)
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Security settings for production
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = False  # Let nginx handle HTTP->HTTPS redirects
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
