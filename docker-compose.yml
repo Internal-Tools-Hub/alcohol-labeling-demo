@@ -88,9 +88,8 @@ services:
     networks:
       - alcohol-labeling-network
     restart: unless-stopped
-    # Only start nginx in production
-    profiles:
-      - production
+    # Nginx starts automatically in production (make prod)
+    # In development (make dev), only postgres and app are started explicitly
 
 volumes:
   postgres_data:

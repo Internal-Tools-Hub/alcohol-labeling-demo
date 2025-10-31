@@ -56,8 +56,6 @@ services:
       retries: 3
 
   nginx:
-    # Enable nginx for production
-    profiles: []
     # Production nginx configuration
     environment:
       DOMAIN_NAME: ${DOMAIN_NAME:-localhost}
@@ -79,10 +77,11 @@ services:
           cpus: '0.05'
     # Health check for nginx (proxying /health)
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health/"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
 
   # Let's Encrypt SSL certificate management
   certbot:
