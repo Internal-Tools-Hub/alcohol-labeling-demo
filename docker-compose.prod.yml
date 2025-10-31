@@ -1,8 +1,6 @@
 # Production Docker Compose Configuration for Linux VM Deployment
 # Use this file for production deployment: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
-version: '3.8'
-
 services:
   app:
     # Production-specific configuration
@@ -23,9 +21,9 @@ services:
         reservations:
           memory: 512M
           cpus: '0.25'
-    # Health check with longer intervals for production
+    # Health check for Django (port 8000)
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 60s
       timeout: 15s
       retries: 3
@@ -66,6 +64,10 @@ services:
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@example.com}
     # Production restart policy
     restart: always
+    # Ensure app is ready before starting
+    depends_on:
+      app:
+        condition: service_healthy
     # Resource limits
     deploy:
       resources:
@@ -75,9 +77,9 @@ services:
         reservations:
           memory: 64M
           cpus: '0.05'
-    # Health check for nginx
+    # Health check for nginx (proxying /health)
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health/"]
       interval: 30s
       timeout: 10s
       retries: 3

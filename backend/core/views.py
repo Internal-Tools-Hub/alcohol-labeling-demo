@@ -6,7 +6,7 @@ import sys
 import os
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView, View
 
@@ -16,6 +16,9 @@ from .services import upload_file_to_gcs, call_gemini_with_image_bytes, generate
 from .verification_service import verification_service
 
 logger = logging.getLogger(__name__)
+def health(request):
+    return JsonResponse({"status": "ok"})
+
 
 
 def _convert_verification_to_legacy(fields: dict, submission: Submission) -> dict:
